@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tenant RAG · 租户管理后台</title>
+<style>
+  :root { --bg:#0f1420; --card:#1a2233; --line:#2a3650; --txt:#e8edf5; --mut:#8fa0bd;
+          --acc:#5aa2ff; --ok:#3ecf8e; --warn:#ffb224; --bad:#ff6b6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+  header { display:flex; align-items:center; gap:12px; padding:14px 20px;
+           border-bottom:1px solid var(--line); position:sticky; top:0;
+           background:var(--bg); z-index:10; flex-wrap:wrap; }
+  header h1 { font-size:17px; margin:0; font-weight:600; }
+  header .sub { color:var(--mut); font-size:12px; }
+  .spacer { flex:1; }
+  input, textarea, select, button { font-size:14px; border-radius:8px; }
+  input, textarea, select { background:#0d1320; border:1px solid var(--line);
+    color:var(--txt); padding:8px 10px; }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--acc); }
+  button { background:var(--acc); color:#06101f; border:none; padding:8px 16px;
+    cursor:pointer; font-weight:600; }
+  button:hover { filter:brightness(1.1); }
+  button.ghost { background:transparent; color:var(--txt); border:1px solid var(--line); }
+  button.danger { background:transparent; color:var(--bad); border:1px solid var(--bad); }
+  button:disabled { opacity:.45; cursor:default; }
+  main { max-width:960px; margin:0 auto; padding:20px; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; }
+  .tabs button { background:transparent; color:var(--mut); border:1px solid var(--line); }
+  .tabs button.on { color:var(--txt); border-color:var(--acc); background:#16233c; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:16px; margin-bottom:16px; }
+  .card h3 { margin:0 0 12px; font-size:15px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+  .row:last-child { margin-bottom:0; }
+  label { color:var(--mut); font-size:13px; min-width:88px; }
+  .grow { flex:1; min-width:200px; }
+  textarea { width:100%; min-height:110px; resize:vertical; font-family:inherit; }
+  .stat { display:flex; gap:12px; flex-wrap:wrap; }
+  .stat .box { flex:1; min-width:150px; background:#0d1320; border:1px solid var(--line);
+    border-radius:10px; padding:12px; }
+  .stat .k { color:var(--mut); font-size:12px; margin-bottom:4px; }
+  .stat .v { font-size:22px; font-weight:700; }
+  .bar { height:8px; background:#0d1320; border-radius:4px; margin-top:8px; overflow:hidden; }
+  .bar i { display:block; height:100%; background:var(--acc); border-radius:4px; }
+  .doc { border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px;
+    background:#0d1320; }
+  .doc .id { font-weight:600; font-size:14px; word-break:break-all; }
+  .doc .txt { color:var(--mut); font-size:13px; margin:6px 0; white-space:pre-wrap;
+    word-break:break-word; }
+  .doc .meta { font-size:12px; color:var(--mut); font-family:ui-monospace,monospace;
+    word-break:break-all; }
+  .hit { border-left:3px solid var(--acc); }
+  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px;
+    margin-right:6px; }
+  .b-vec { background:#1d3a24; color:var(--ok); }
+  .b-fts { background:#3a2f1d; color:var(--warn); }
+  .score { color:var(--mut); font-size:12px; }
+  .pager { display:flex; gap:10px; align-items:center; justify-content:center;
+    margin-top:12px; color:var(--mut); font-size:13px; }
+  #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:#222f47; border:1px solid var(--line); padding:10px 18px;
+    border-radius:10px; display:none; max-width:90%; }
+  .hint { color:var(--mut); font-size:12px; }
+  .login-ok { color:var(--ok); font-size:13px; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Tenant RAG</h1><span class="sub">租户管理后台 · 多租户混合检索</span>
+  <span class="spacer"></span>
+  <span id="who" class="login-ok hidden"></span>
+  <input id="key" type="password" placeholder="粘贴租户 API key" size="28" autocomplete="off">
+  <button id="btn-login">连接</button>
+  <button id="btn-logout" class="ghost hidden">退出</button>
+</header>
+<main>
+  <div id="gate" class="card">
+    <h3>开始使用</h3>
+    <p class="hint">在上方输入租户的 API key 并连接。key 只保存在本页内存中，不会发送到除本服务外的任何地方。<br>
+    租户创建目前走 Python API：<span style="font-family:ui-monospace,monospace">TenantRAG(db).register("tenant-id", "api-key")</span></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="tabs">
+      <button data-tab="ov" class="on">概览</button>
+      <button data-tab="docs">文档管理</button>
+      <button data-tab="search">搜索</button>
+    </div>
+
+    <section id="tab-ov">
+      <div class="card"><h3>租户概览</h3><div class="stat" id="stats"></div></div>
+      <div class="card"><h3>说明</h3>
+        <p class="hint">上传的文档由服务端自动处理：文本进 SQLite FTS5（trigram，支持中文子串），
+        同时由 embedder 生成向量存入文档行。搜索时向量 + FTS 双路召回、RRF 融合排序。<br>
+        默认 embedder 为离线 FakeEmbedder；M2 启动时加 <span style="font-family:ui-monospace,monospace">--embed-base-url</span>
+        可接入 OpenAI 兼容的真实向量模型，后台无需改动。</p>
+      </div>
+    </section>
+
+    <section id="tab-docs" class="hidden">
+      <div class="card">
+        <h3>上传文档（自动向量化）</h3>
+        <div class="row"><label>doc_id（可选）</label>
+          <input id="up-id" class="grow" placeholder="不填则自动生成"></div>
+        <div class="row"><label>文本内容</label></div>
+        <div class="row"><textarea id="up-text" placeholder="粘贴或在下方选择 .txt / .md 文件…"></textarea></div>
+        <div class="row"><label>metadata JSON</label>
+          <input id="up-meta" class="grow" placeholder='可选，如 {"source": "manual"}'></div>
+        <div class="row">
+          <input type="file" id="up-file" accept=".txt,.md,.markdown">
+          <span class="spacer"></span>
+          <button id="btn-upload">上传并向量化</button>
+        </div>
+        <div class="row"><span id="up-result" class="hint"></span></div>
+      </div>
+      <div class="card">
+        <h3>文档列表</h3>
+        <div class="row"><button id="btn-refresh" class="ghost">刷新</button>
+          <span class="spacer"></span><span id="docs-count" class="hint"></span></div>
+        <div id="docs"></div>
+        <div class="pager">
+          <button id="pg-prev" class="ghost">上一页</button>
+          <span id="pg-info"></span>
+          <button id="pg-next" class="ghost">下一页</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-search" class="hidden">
+      <div class="card">
+        <h3>混合检索</h3>
+        <div class="row">
+          <input id="q" class="grow" placeholder="输入查询，如：腾讯视频多少钱">
+          <select id="qk"><option value="3">top 3</option><option value="5" selected>top 5</option>
+            <option value="10">top 10</option><option value="20">top 20</option></select>
+          <button id="btn-search">搜索</button>
+        </div>
+        <div class="row"><span class="hint">向量 + FTS5 双路召回，RRF 融合。徽标显示该结果命中的通道。</span></div>
+      </div>
+      <div id="hits"></div>
+    </section>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+const S = { key: null, tenant: null, page: 0, per: 10 };
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function toast(msg, ms=2600) {
+  const t = $("toast"); t.textContent = msg; t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", ms);
+}
+
+async function api(path, { method="GET", body=null } = {}) {
+  const headers = {};
+  if (S.key) headers["Authorization"] = "Bearer " + S.key;
+  if (body !== null) headers["Content-Type"] = "application/json";
+  const r = await fetch(path, { method, headers,
+    body: body !== null ? JSON.stringify(body) : undefined });
+  let data = null;
+  try { data = await r.json(); } catch (e) { /* 非 JSON */ }
+  if (!r.ok) throw new Error((data && (data.hint || data.error)) || ("HTTP " + r.status));
+  return data;
+}
+
+// ---- 登录 ----
+$("btn-login").onclick = async () => {
+  const key = $("key").value.trim();
+  if (!key) return toast("请先粘贴 API key");
+  S.key = key;
+  try {
+    const u = await api("/v1/usage");
+    S.tenant = u.tenant_id;
+    $("who").textContent = "已连接：" + u.tenant_id;
+    $("who").classList.remove("hidden");
+    $("btn-logout").classList.remove("hidden");
+    $("btn-login").classList.add("hidden");
+    $("key").classList.add("hidden");
+    $("gate").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    renderStats(u);
+    loadDocs();
+  } catch (e) {
+    S.key = null;
+    toast("连接失败：" + e.message);
+  }
+};
+$("btn-logout").onclick = () => location.reload();
+$("key").addEventListener("keydown", e => { if (e.key === "Enter") $("btn-login").click(); });
+
+// ---- tabs ----
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  ["ov","docs","search"].forEach(t => $("tab-"+t).classList.toggle("hidden", t !== b.dataset.tab));
+});
+
+// ---- 概览 ----
+function renderStats(u) {
+  const pct = u.quota_docs ? Math.min(100, (u.docs / u.quota_docs * 100)) : 0;
+  $("stats").innerHTML = `
+    <div class="box"><div class="k">文档数 / 配额</div>
+      <div class="v">${u.docs} <span style="font-size:13px;color:var(--mut)">/ ${u.quota_docs ?? "∞"}</span></div>
+      ${u.quota_docs ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ""}</div>
+    <div class="box"><div class="k">今日请求</div><div class="v">${u.requests_today ?? "-"}</div></div>
+    <div class="box"><div class="k">限流</div>
+      <div class="v" style="font-size:16px">${u.rate_limit ? u.rate_limit.capacity + " / " + u.rate_limit.per_seconds + "s" : "-"}</div></div>`;
+}
+
+// ---- 上传 ----
+$("up-file").addEventListener("change", async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const text = await f.text();
+  $("up-text").value = text;
+  if (!$("up-id").value) $("up-id").value = f.name.replace(/\.[^.]+$/, "").slice(0, 64);
+  toast("已读入文件：" + f.name);
+});
+$("btn-upload").onclick = async () => {
+  const text = $("up-text").value.trim();
+  if (!text) return toast("文本内容不能为空");
+  let metadata = null;
+  const raw = $("up-meta").value.trim();
+  if (raw) {
+    try { metadata = JSON.parse(raw); }
+    catch (e) { return toast("metadata 不是合法 JSON"); }
+    if (typeof metadata !== "object" || Array.isArray(metadata))
+      return toast("metadata 必须是 JSON 对象");
+  }
+  const payload = { text };
+  const docId = $("up-id").value.trim();
+  if (docId) payload.doc_id = docId;
+  if (metadata) payload.metadata = metadata;
+  try {
+    const r = await api("/v1/index", { method: "POST", body: payload });
+    $("up-result").textContent = "已上传并向量化，doc_id=" + r.doc_id;
+    $("up-text").value = ""; $("up-id").value = ""; $("up-file").value = "";
+    S.page = 0; loadDocs(); refreshStats();
+  } catch (e) { toast("上传失败：" + e.message); }
+};
+
+// ---- 列表 ----
+async function refreshStats() {
+  try { renderStats(await api("/v1/usage")); } catch (e) { /* 忽略 */ }
+}
+async function loadDocs() {
+  const off = S.page * S.per;
+  try {
+    const r = await api(`/v1/docs?limit=${S.per}&offset=${off}`);
+    $("docs-count").textContent = `第 ${off + 1}–${off + r.docs.length} 条`;
+    $("docs").innerHTML = r.docs.length ? r.docs.map(d => `
+      <div class="doc">
+        <div class="id">${esc(d.doc_id)}
+          <button class="danger ghost" style="float:right" data-del="${esc(d.doc_id)}">删除</button>
+        </div>
+        <div class="txt">${esc(d.text.slice(0, 300))}${d.text.length > 300 ? "…" : ""}</div>
+        <div class="meta">${esc(JSON.stringify(d.metadata))}</div>
+      </div>`).join("")
+      : `<p class="hint">还没有文档，先在上方上传。</p>`;
+    $("pg-info").textContent = `第 ${S.page + 1} 页`;
+    $("pg-prev").disabled = S.page === 0;
+    $("pg-next").disabled = r.docs.length < S.per;
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => delDoc(b.dataset.del));
+  } catch (e) { toast("加载失败：" + e.message); }
+}
+async function delDoc(docId) {
+  if (!confirm("删除文档 " + docId + "？")) return;
+  try {
+    await api("/v1/docs/" + encodeURIComponent(docId), { method: "DELETE" });
+    toast("已删除");
+    loadDocs(); refreshStats();
+  } catch (e) { toast("删除失败：" + e.message); }
+}
+$("btn-refresh").onclick = loadDocs;
+$("pg-prev").onclick = () => { if (S.page > 0) { S.page--; loadDocs(); } };
+$("pg-next").onclick = () => { S.page++; loadDocs(); };
+
+// ---- 搜索 ----
+$("btn-search").onclick = doSearch;
+$("q").addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+async function doSearch() {
+  const query = $("q").value.trim();
+  if (!query) return toast("请输入查询");
+  const k = parseInt($("qk").value, 10);
+  $("hits").innerHTML = `<p class="hint">检索中…</p>`;
+  try {
+    const r = await api("/v1/search", { method: "POST", body: { query, k } });
+    $("hits").innerHTML = r.hits.length ? r.hits.map((h, i) => `
+      <div class="doc hit">
+        <div class="id">#${i + 1} ${esc(h.doc_id)}
+          <span class="score">score ${Number(h.score).toFixed(4)}</span></div>
+        <div style="margin:6px 0">${(h.matched || []).map(m =>
+          `<span class="badge ${m === "vector" ? "b-vec" : "b-fts"}">${m === "vector" ? "向量" : "关键词"}</span>`).join("")}</div>
+        <div class="txt">${esc(h.text)}</div>
+        <div class="meta">${esc(JSON.stringify(h.metadata))}</div>
+      </div>`).join("")
+      : `<div class="card"><p class="hint">没有命中。换个问法试试。</p></div>`;
+  } catch (e) { $("hits").innerHTML = ""; toast("搜索失败：" + e.message); }
+}
+</script>
+</body>
+</html>

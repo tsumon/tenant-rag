@@ -1,0 +1,17 @@
+{"type": "doc", "doc_id": "bill-netflix", "text": "Netflix 高级会员每月 198 元自动续费，下次扣费 2026-10-05", "metadata": {"platform": "web"}}
+{"type": "doc", "doc_id": "bill-spotify", "text": "Spotify Premium 个人版每月 18 元，绑定招行信用卡尾号 4321", "metadata": {"platform": "appstore"}}
+{"type": "doc", "doc_id": "bill-icloud", "text": "iCloud+ 200GB 方案每月 21 元，苹果 App Store 订阅", "metadata": {"platform": "appstore"}}
+{"type": "doc", "doc_id": "bill-chatgpt", "text": "ChatGPT Plus 每月 20 美元，按月自动续订，可随时取消", "metadata": {"platform": "web"}}
+{"type": "doc", "doc_id": "bill-bilibili", "text": "哔哩哔哩大会员年费 148 元，到期日 2027-01-20", "metadata": {"platform": "web"}}
+{"type": "doc", "doc_id": "bill-netease", "text": "网易云音乐黑胶 VIP 月费 15 元，已连续订阅 14 个月", "metadata": {"platform": "alipay"}}
+{"type": "doc", "doc_id": "bill-txvideo", "text": "腾讯视频 VIP 年费 198 元，自动续费，已开通 3 年", "metadata": {"platform": "wechat"}}
+{"type": "doc", "doc_id": "bill-notion", "text": "Notion Plus 每月 10 美元，工作区订阅", "metadata": {"platform": "web"}}
+{"type": "doc", "doc_id": "bill-dida", "text": "滴答清单高级会员年费 38 元，去年双十一购买", "metadata": {"platform": "android"}}
+{"type": "doc", "doc_id": "bill-meituan", "text": "美团外卖会员月费 15 元，每月 6 张 5 元无门槛券", "metadata": {"platform": "meituan"}}
+{"type": "query", "query": "腾讯视频一年多少钱", "expected": ["bill-txvideo"]}
+{"type": "query", "query": "每个月扣 18 块的是什么", "expected": ["bill-spotify"]}
+{"type": "query", "query": "苹果订阅的 21 元是什么", "expected": ["bill-icloud"]}
+{"type": "query", "query": "网易云音乐多少钱一个月", "expected": ["bill-netease"]}
+{"type": "query", "query": "哔哩哔哩大会员多少钱", "expected": ["bill-bilibili"]}
+{"type": "query", "query": "滴答清单高级会员多少钱", "expected": ["bill-dida"]}
+{"type": "query", "query": "用美元结算的订阅", "expected": ["bill-chatgpt", "bill-notion"]}
