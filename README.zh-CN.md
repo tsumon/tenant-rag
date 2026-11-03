@@ -24,6 +24,10 @@
 
 这是**检索组件**，不是完整知识库业务产品，也不是托管 SaaS。它不负责回答生成、PDF 解析、自动切块、用户账号、租户内文档权限或分布式存储。订阅管家示例用模板回答演示检索，不是大模型 Agent 平台。
 
+## 安装 v0.3.0
+
+从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.3.0) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.3.0-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
+
 ## 从源码安装
 
 要求 **Python 3.10+**，SQLite 支持 **FTS5 + trigram tokenizer**（SQLite 3.34+）。运行时无第三方依赖；构建包使用 setuptools。
