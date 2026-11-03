@@ -33,6 +33,7 @@ PROXY_PREFIXES = ("/v1/index", "/v1/search", "/v1/docs", "/v1/usage", "/v1/healt
 
 
 class AdminHandler(BaseHTTPRequestHandler):
+    timeout = 10
     server_version = "TenantRAG-Admin/1.0"
 
     def log_message(self, fmt, *args):  # 安静
@@ -78,7 +79,7 @@ class AdminHandler(BaseHTTPRequestHandler):
     # ---- 反向代理 ----
     def _proxy(self):
         path = self.path.split("?", 1)[0]
-        if not path.rstrip("/").split("?")[0].startswith(PROXY_PREFIXES):
+        if path not in PROXY_PREFIXES and not (path.startswith("/v1/docs/") and path.count("/") == 3):
             self._err(404, "not_found")
             return
         api = self.server.api_base.rstrip("/")
@@ -90,8 +91,10 @@ class AdminHandler(BaseHTTPRequestHandler):
                 length = int(self.headers.get("Content-Length", 0))
             except (TypeError, ValueError):
                 length = 0
-            length = min(length, 10 * 1024 * 1024)
-            body = self.rfile.read(length) if length else None
+            if length <= 0 or length > 10 * 1024 * 1024:
+                self._err(400, "bad_request", hint="Content-Length must be between 1 and 10485760")
+                return
+            body = self.rfile.read(length)
 
         req = urllib.request.Request(url, data=body, method=self.command)
         for h in ("Authorization", "Content-Type"):
@@ -110,10 +113,13 @@ class AdminHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(data)
         except urllib.error.HTTPError as e:
-            data = e.read()
+            with e:
+                data = e.read()
             self.send_response(e.code)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(data)))
+            if e.headers.get("Retry-After"):
+                self.send_header("Retry-After", e.headers["Retry-After"])
             self.end_headers()
             self.wfile.write(data)
         except Exception:
@@ -149,6 +155,8 @@ def main():
         server.serve_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        server.server_close()
 
 
 if __name__ == "__main__":

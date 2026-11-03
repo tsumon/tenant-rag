@@ -114,5 +114,11 @@ class TenantRAG:
         支持 limit/offset 分页；调用方需要全量时应循环取完。"""
         return self.store.list_docs(self._tenant(api_key), limit, offset)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
     def close(self) -> None:
         self.store.close()
