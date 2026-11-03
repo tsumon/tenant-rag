@@ -1,6 +1,8 @@
 # Release checklist
 
-Version 0.3.0 is a release candidate in source, not evidence of a published package or deployed service.
+Version 0.3.0 is distributed through [GitHub Releases](https://github.com/tsumon/tenant-rag/releases/tag/v0.3.0), with wheel, source distribution, offline evaluation report and SHA-256 checksums. The release workflow tests Python 3.10–3.14 and smoke-tests installed distributions before publication. This is not a PyPI publication or a deployed service.
+
+Known validation gaps remain: full browser interaction QA, real-provider quality, production load and adversarial security audit. HTTP/admin proxy smoke tests do not replace browser QA.
 
 ## Local gates
 
