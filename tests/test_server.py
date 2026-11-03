@@ -24,7 +24,8 @@ def _req(server, method, path, key=None, body=None):
         with urllib.request.urlopen(req, timeout=10) as r:
             return r.status, json.loads(r.read().decode()), dict(r.headers)
     except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read().decode()), dict(e.headers)
+        with e:
+            return e.code, json.loads(e.read().decode()), dict(e.headers)
 
 
 class ServerTest(unittest.TestCase):

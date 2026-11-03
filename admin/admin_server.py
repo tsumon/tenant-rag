@@ -113,7 +113,8 @@ class AdminHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(data)
         except urllib.error.HTTPError as e:
-            data = e.read()
+            with e:
+                data = e.read()
             self.send_response(e.code)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(data)))

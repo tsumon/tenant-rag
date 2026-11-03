@@ -116,7 +116,8 @@ class ServerRobustnessTest(unittest.TestCase):
             with urllib.request.urlopen(req, timeout=10) as r:
                 return r.status, json.loads(r.read().decode())
         except urllib.error.HTTPError as e:
-            return e.code, json.loads(e.read().decode())
+            with e:
+                return e.code, json.loads(e.read().decode())
 
     def test_bad_text_type_is_400_not_reset(self):
         self._start(FakeEmbedder())
@@ -209,7 +210,8 @@ class ListRouteTest(unittest.TestCase):
             with urllib.request.urlopen(req, timeout=10) as r:
                 return r.status, json.loads(r.read().decode())
         except urllib.error.HTTPError as e:
-            return e.code, json.loads(e.read().decode())
+            with e:
+                return e.code, json.loads(e.read().decode())
 
     def test_list_docs_route_paginates(self):
         from tenantrag.server import make_server
@@ -413,9 +415,10 @@ class SecurityTest(unittest.TestCase):
         finally:
             self._stop(srv, old)
 
-    def test_deep_nested_json_500_and_survives(self):
-        """深层嵌套 JSON 触发 RecursionError：进程不崩，返回 500 JSON，
-        后续请求正常（Round 5 实测确认）。"""
+    def test_deep_nested_json_400_and_survives(self):
+        """Excessive JSON nesting is malformed client input on every Python version.
+        Reject it with 400 and keep serving later requests.
+        """
         srv, old = self._srv()
         try:
             port = srv.server_address[1]
@@ -429,11 +432,12 @@ class SecurityTest(unittest.TestCase):
                     with urllib.request.urlopen(req, timeout=15) as r:
                         return r.status, r.read()[:40]
                 except urllib.error.HTTPError as e:
-                    return e.code, e.read()[:40]
+                    with e:
+                        return e.code, e.read()[:40]
 
             code, body = post(deep)
-            self.assertEqual(code, 500)
-            self.assertIn(b"internal_error", body)
+            self.assertEqual(code, 400)
+            self.assertIn(b"bad_request", body)
             # 服务还活着
             code, _ = post(b'{"query": "hi"}')
             self.assertEqual(code, 200)
