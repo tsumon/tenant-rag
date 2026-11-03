@@ -25,6 +25,10 @@ Small, tenant-scoped hybrid retrieval for personal AI applications.
 
 This is a **retrieval component**, not a complete knowledge-base product or hosted SaaS. It does not generate answers, parse PDFs, chunk long documents, manage user accounts, enforce document ACLs inside a tenant, or provide distributed storage. The included subscription agent demonstrates retrieval with templated answers, not an LLM agent platform.
 
+## Install v0.3.0
+
+Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.3.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.3.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
+
 ## Install from source
 
 Requires **Python 3.10+** and SQLite compiled with **FTS5 and the trigram tokenizer** (SQLite 3.34+). The core has no third-party runtime dependencies. Building packages uses setuptools.
