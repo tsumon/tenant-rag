@@ -8,10 +8,47 @@
 {"type": "doc", "doc_id": "bill-notion", "text": "Notion Plus 每月 10 美元，工作区订阅", "metadata": {"platform": "web"}}
 {"type": "doc", "doc_id": "bill-dida", "text": "滴答清单高级会员年费 38 元，去年双十一购买", "metadata": {"platform": "android"}}
 {"type": "doc", "doc_id": "bill-meituan", "text": "美团外卖会员月费 15 元，每月 6 张 5 元无门槛券", "metadata": {"platform": "meituan"}}
-{"type": "query", "query": "腾讯视频一年多少钱", "expected": ["bill-txvideo"]}
-{"type": "query", "query": "每个月扣 18 块的是什么", "expected": ["bill-spotify"]}
-{"type": "query", "query": "苹果订阅的 21 元是什么", "expected": ["bill-icloud"]}
-{"type": "query", "query": "网易云音乐多少钱一个月", "expected": ["bill-netease"]}
-{"type": "query", "query": "哔哩哔哩大会员多少钱", "expected": ["bill-bilibili"]}
-{"type": "query", "query": "滴答清单高级会员多少钱", "expected": ["bill-dida"]}
-{"type": "query", "query": "用美元结算的订阅", "expected": ["bill-chatgpt", "bill-notion"]}
+{"type": "doc", "doc_id": "policy-refund", "text": "退款规则：未拆封商品在签收后 30 天内可退货；已拆封商品只有质量故障且签收未满 7 天才可申请退款。", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "policy-cancellation", "text": "取消订阅会停止下一期扣款；已付费的会员权益持续到本期结束，不退还当期费用。", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "account-recovery", "text": "Work account recovery: use the self-service reset portal and verify your recovery code to regain access after forgetting a password.", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "invoice-correction", "text": "发票抬头错误：向财务提交发票编号与正确的公司名称，通常 3 个工作日内完成重开。", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "shipping-delay", "text": "包裹物流连续 7 个工作日没有更新时，凭运单号联系售后，客服将向承运商发起查询。", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "leave-carryover", "text": "Annual leave policy: carry over up to five unused vacation days into the next year. Carried days expire on March 31.", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "expense-meals", "text": "Business meal reimbursement requires an itemized receipt and a list of attendees. The limit is CNY 200 per person.", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "incident-oncall", "text": "SEV1 production outage: page the on-call engineer immediately, including outside business hours. Do not wait until the next workday.", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "retention-delete", "text": "账号注销后，在线个人数据会在 30 天内删除；灾备副本最多保留 90 天，然后自动过期。", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "offline-sync", "text": "Offline notes stay on your device while disconnected. Changes sync automatically when the internet connection returns.", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "export-data", "text": "EXPORT-CSV: workspace administrators can download records as UTF-8 CSV. Read-only members cannot export the workspace.", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "plan-family", "text": "Family cloud storage plan: 2 TB shared by up to six family members. Each member keeps private files separate.", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "policy-trial", "text": "The trial lasts seven days. A saved card is charged on day eight unless the trial is canceled before it ends.", "metadata": {"fixture": "synthetic"}}
+{"type": "doc", "doc_id": "security-phishing", "text": "Unexpected email asking you to confirm your password: do not click its links. Report the suspicious message to the security team.", "metadata": {"fixture": "synthetic"}}
+{"type": "query", "query": "腾讯视频一年多少钱", "expected": ["bill-txvideo"], "id": "pipeline-01", "suite": "pipeline", "tags": ["lexical", "zh"]}
+{"type": "query", "query": "每个月扣 18 块的是什么", "expected": ["bill-spotify"], "id": "pipeline-02", "suite": "pipeline", "tags": ["lexical", "zh"]}
+{"type": "query", "query": "苹果订阅的 21 元是什么", "expected": ["bill-icloud"], "id": "pipeline-03", "suite": "pipeline", "tags": ["lexical", "zh"]}
+{"type": "query", "query": "网易云音乐多少钱一个月", "expected": ["bill-netease"], "id": "pipeline-04", "suite": "pipeline", "tags": ["lexical", "zh"]}
+{"type": "query", "query": "哔哩哔哩大会员多少钱", "expected": ["bill-bilibili"], "id": "pipeline-05", "suite": "pipeline", "tags": ["lexical", "zh"]}
+{"type": "query", "query": "滴答清单高级会员多少钱", "expected": ["bill-dida"], "id": "pipeline-06", "suite": "pipeline", "tags": ["lexical", "zh"]}
+{"type": "query", "query": "用美元结算的订阅", "expected": ["bill-chatgpt", "bill-notion"], "id": "pipeline-07", "suite": "pipeline", "tags": ["lexical", "zh"]}
+{"type": "query", "id": "pipeline-08", "suite": "pipeline", "query": "发票抬头错误如何处理", "expected": ["invoice-correction"], "tags": ["lexical"]}
+{"type": "query", "id": "pipeline-09", "suite": "pipeline", "query": "Annual leave policy", "expected": ["leave-carryover"], "tags": ["lexical"]}
+{"type": "query", "id": "pipeline-10", "suite": "pipeline", "query": "SEV1 production outage", "expected": ["incident-oncall"], "tags": ["lexical"]}
+{"type": "query", "id": "pipeline-11", "suite": "pipeline", "query": "EXPORT-CSV", "expected": ["export-data"], "tags": ["lexical"]}
+{"type": "query", "id": "pipeline-12", "suite": "pipeline", "query": "Offline notes", "expected": ["offline-sync"], "tags": ["lexical"]}
+{"type": "query", "id": "pipeline-13", "suite": "pipeline", "query": "Family cloud storage plan", "expected": ["plan-family"], "tags": ["lexical"]}
+{"type": "query", "id": "pipeline-14", "suite": "pipeline", "query": "Business meal reimbursement", "expected": ["expense-meals"], "tags": ["lexical"]}
+{"type": "query", "id": "pipeline-15", "suite": "pipeline", "query": "退款规则 未拆封商品", "expected": ["policy-refund"], "tags": ["lexical"]}
+{"type": "query", "id": "pipeline-16", "suite": "pipeline", "query": "account recovery portal", "expected": ["account-recovery"], "tags": ["lexical"]}
+{"type": "query", "id": "semantic-01", "suite": "semantic", "query": "我已经买了本月的会员，现在关掉续费，剩下的日子还能用吗？", "expected": ["policy-cancellation"], "tags": ["paraphrase", "zh", "billing"]}
+{"type": "query", "id": "semantic-02", "suite": "semantic", "query": "东西包装都没打开，收货才两周，我不想要了，可以把钱拿回来吗？", "expected": ["policy-refund"], "tags": ["paraphrase", "zh", "hard-negative"]}
+{"type": "query", "id": "semantic-03", "suite": "semantic", "query": "忘记办公系统的口令，被挡在登录页面了，该怎么重新进去？", "expected": ["account-recovery"], "tags": ["cross-lingual", "zh-to-en"]}
+{"type": "query", "id": "semantic-04", "suite": "semantic", "query": "公司报销凭证上的单位名字写错了，应该找谁更正？", "expected": ["invoice-correction"], "tags": ["paraphrase", "zh"]}
+{"type": "query", "id": "semantic-05", "suite": "semantic", "query": "快递轨迹已经一周多没有任何动静，下一步应该做什么？", "expected": ["shipping-delay"], "tags": ["paraphrase", "zh"]}
+{"type": "query", "id": "semantic-06", "suite": "semantic", "query": "今年没休完的假，最迟能留到明年什么时候？", "expected": ["leave-carryover"], "tags": ["cross-lingual", "zh-to-en"]}
+{"type": "query", "id": "semantic-07", "suite": "semantic", "query": "请客户吃晚饭，除了小票还得提供哪些人到场的资料？", "expected": ["expense-meals"], "tags": ["cross-lingual", "zh-to-en"]}
+{"type": "query", "id": "semantic-08", "suite": "semantic", "query": "It is midnight and the live service is completely down. Who should be woken up?", "expected": ["incident-oncall"], "tags": ["paraphrase", "en"]}
+{"type": "query", "id": "semantic-09", "suite": "semantic", "query": "If I close my account today, will every backup disappear immediately?", "expected": ["retention-delete"], "tags": ["cross-lingual", "en-to-zh", "negation"]}
+{"type": "query", "id": "semantic-10", "suite": "semantic", "query": "I edited a memo during a flight with no Wi-Fi. Will my laptop send those edits later by itself?", "expected": ["offline-sync"], "tags": ["paraphrase", "en"]}
+{"type": "query", "id": "semantic-11", "suite": "semantic", "query": "Can a colleague who only has viewing access download the entire workspace into a spreadsheet?", "expected": ["export-data"], "tags": ["paraphrase", "en", "access-control"]}
+{"type": "query", "id": "semantic-12", "suite": "semantic", "query": "六口之家想共用一个两千 GB 的网盘套餐，但不互相看到私人文件，选哪个方案？", "expected": ["plan-family"], "tags": ["cross-lingual", "zh-to-en", "numeric-equivalence"]}
+{"type": "query", "id": "semantic-13", "suite": "semantic", "query": "When will the free evaluation begin costing money if I do nothing?", "expected": ["policy-trial"], "tags": ["paraphrase", "en", "billing"]}
+{"type": "query", "id": "semantic-14", "suite": "semantic", "query": "Someone sent me an unsolicited link demanding my login secret. Should I open it?", "expected": ["security-phishing"], "tags": ["paraphrase", "en", "hard-negative"]}

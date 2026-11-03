@@ -102,6 +102,7 @@ class ServerRobustnessTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
+        self.server.rag.close()
         self.thread.join(timeout=5)
         self.tmp.cleanup()
 
@@ -230,6 +231,7 @@ class ListRouteTest(unittest.TestCase):
             self.assertEqual(code, 400)
         finally:
             self.server.shutdown()
+            self.server.server_close()
             self.server.rag.close()
 
 
@@ -383,6 +385,7 @@ class SecurityTest(unittest.TestCase):
         from tenantrag.server import Handler
 
         srv.shutdown()
+        srv.server_close()
         srv.rag.close()
         Handler.timeout = old
 

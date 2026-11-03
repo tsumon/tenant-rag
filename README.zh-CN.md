@@ -1,140 +1,153 @@
-# tenant-rag：多租户混合检索（RAG + grep）
+<div align="center">
 
-[English](README.md) | 中文
+# tenant-rag
 
-给独立开发者个人 AI 应用用的**轻量检索底座**，不是另一个 Elasticsearch。
+**每个用户的数据，只出现在自己的检索结果里。**
 
-一句话定位：你的 App 需要"搜用户自己的私域数据"时，接上它——向量（语义）+ FTS5（关键词/grep）混合检索，租户之间物理级隔离，单文件 SQLite，零运维。
+面向个人 AI 应用的轻量多租户混合检索组件：一个 SQLite 数据库，零第三方运行时依赖。
 
-## 为什么不是重复造轮子
+[![CI](https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
+[![MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
-ES / OpenSearch / Qdrant / pgvector 都是轮子，但它们是**重型 infra**：要部署、要运维，多租户隔离得自己搭（RLS、payload filter，漏一处就串数据）。本项目的切口是"**小而多租户**"：
+[English](README.md) · [发布检查清单](docs/RELEASING.md)
 
-- 个人级语料（每租户几千文档），暴力向量检索足够，ANN 是杀鸡用牛刀
-- 开箱即用的租户隔离：API key 即租户，跨租户泄漏有测试锁死
-- 检索评测门禁：改 tokenizer / 换 embedding 模型，先看数字再上线
+</div>
 
-切口守不住做大了就撞轮子——非目标见文末。
+## 能做什么
 
-## 快速开始
+- **混合检索**：余弦向量检索 + FTS5 trigram 关键词检索，通过 RRF 融合排名。
+- **租户逻辑隔离**：API key 解析成租户身份，索引、查询、删除、配额和用量均按租户过滤；不同租户可以使用相同文档 ID。
+- **轻量存储**：SQLite + Python 标准库，适合个人级语料，不需要单独部署向量数据库。
+- **可直接使用**：Python API、Bearer 鉴权 HTTP API、本地浏览器管理界面。
+- **离线回归门禁**：隔离、迁移回滚、并发配额、错误请求与检索管线测试。
 
-```python
+这是**检索组件**，不是完整知识库业务产品，也不是托管 SaaS。它不负责回答生成、PDF 解析、自动切块、用户账号、租户内文档权限或分布式存储。订阅管家示例用模板回答演示检索，不是大模型 Agent 平台。
+
+## 从源码安装
+
+要求 **Python 3.10+**，SQLite 支持 **FTS5 + trigram tokenizer**（SQLite 3.34+）。运行时无第三方依赖；构建包使用 setuptools。
+
+```bash
+git clone https://github.com/tsumon/tenant-rag.git
+cd tenant-rag
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install .
+python -c "import sqlite3; sqlite3.connect(':memory:').execute(\"CREATE VIRTUAL TABLE probe USING fts5(text, tokenize='trigram')\")"
+```
+
+上面是源码安装流程，不表示已经发布到 PyPI。
+
+## 五分钟跑通
+
+生成随机租户 key，初始化服务端将使用的**同一个数据库**。注册只需执行一次；重复注册会报错。保留此终端，后续 curl 使用同一个环境变量。
+
+```bash
+export TENANT_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+python - <<'PY'
+import os
 from tenantrag import TenantRAG
-from tenantrag.embed import FakeEmbedder  # 离线；线上换 OpenAIEmbedder
+with TenantRAG('tenantrag.db') as rag:
+    rag.register('demo-user', os.environ['TENANT_KEY'], quota_docs=5000)
+    rag.index(os.environ['TENANT_KEY'], '腾讯视频 VIP 年费 198 元', doc_id='bill-1')
+    print(rag.search(os.environ['TENANT_KEY'], '腾讯视频多少钱'))
+PY
 
-rag = TenantRAG("app.db", embedder=FakeEmbedder())
-rag.register("user-123", api_key="sk-xxx", quota_docs=5000)
-
-rag.index("sk-xxx", "Netflix 每月 198 元自动续费", doc_id="bill-1")
-hits = rag.search("sk-xxx", "Netflix 多少钱")
-# [{'doc_id': 'bill-1', 'text': ..., 'score': ..., 'matched': ['vector', 'fts']}]
+# 在另一终端进入同一目录、激活虚拟环境，再启动服务：
+tenant-rag --db tenantrag.db --port 8000
 ```
 
-线上 embedding（OpenAI 兼容接口，DeepSeek/SiliconFlow/本地 vLLM 都行）：
-
-```python
-from tenantrag.embed import OpenAIEmbedder
-emb = OpenAIEmbedder(api_key="...", base_url="https://api.siliconflow.cn/v1",
-                     model="BAAI/bge-m3")
-```
-
-## 租户管理后台（`admin/`）
-
-纯标准库 Web UI，反向代理到 M2 HTTP API，只消费公开接口：
+回到保存 TENANT_KEY 的终端：
 
 ```bash
-# 1. 起 M2 API
-PYTHONPATH=. python3 -m tenantrag.server --db tenantrag.db --port 8000
-# 2. 起管理后台
-python3 admin/admin_server.py --api http://127.0.0.1:8000 --port 8002
-# 3. 浏览器打开 http://127.0.0.1:8002/ ，粘贴租户 API key 登录
+curl -sS http://127.0.0.1:8000/v1/search \
+  -H "Authorization: Bearer $TENANT_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"腾讯视频多少钱","k":5}'
 ```
 
-功能：租户概览（文档数/配额、今日请求、限流）、上传文档（文本框或 .txt/.md 文件，服务端自动向量化）、文档列表分页 + 删除、混合检索（结果带向量/关键词通道徽标和 RRF 分数）。
+默认 FakeEmbedder 是确定性**词法哈希向量**，不具备真正的语义能力。上述流程不下载模型、不调用外部 API，也不产生模型费用。
 
-说明：key 只存浏览器内存；后台本身无鉴权，只监听 127.0.0.1，是本地运维工具，不要暴露到公网。租户创建目前走 Python API（`TenantRAG.register`）。
-
-## 架构
-
-```
-search(query)
-  ├─ query → embedding → vector_search (cosine, 余弦<=0 过滤)
-  ├─ query → build_fts_query → fts_search (FTS5 trigram + JOIN 租户过滤)
-  └─ RRF 融合 → fetch_docs → 返回（含 matched: vector/fts）
-```
-
-三处最容易错的地方，都在代码里标出来了：
-
-1. **FTS 租户过滤**：FTS5 表不存 tenant_id，全文检索必须 `JOIN docs` 过滤，否则一个 MATCH 就串租户。`test_isolation.py` 锁死。
-2. **CJK 分词**：unicode61 会把"腾讯视频"切成整词、单字查不到；改用 trigram，query 侧切滑动 trigram。2 字以下短词 trigram 查不了，走向量通道——这正是混合检索的意义。
-3. **用户输入进 MATCH**：引号/AND/括号会触发 FTS5 语法错误，`build_fts_query` 只抽 token 并转义。
-
-## 商业级 checklist（MVP 已落地）
-
-- [x] API key 鉴权（key = tenant，最简单的隔离模型）
-- [x] 租户配额（超限 `QuotaError`，更新不占配额，删除释放配额）
-- [x] 跨租户泄漏测试（7 项，含"相同文本两租户各存一份"这种阴险 case）
-- [x] 检索评测集 + CI 门禁（`eval/run_eval.py --min-recall 0.8`）
-- [x] 用量查询（`usage()`：docs / quota）
-- [x] M2：HTTP 服务（`tenantrag/server.py`，标准库，零依赖）
-  - `POST /v1/index` / `POST /v1/search` / `DELETE /v1/docs/<id>` / `GET /v1/docs?limit=&offset=` / `GET /v1/usage` / `GET /v1/health`
-  - 鉴权中间件：`Authorization: Bearer` → 401；错误映射：配额/隔离 → 403，限流 → 429 + Retry-After
-  - 注册强制 api_key ≥ 8 字符（弱 key 直接拒，key 即租户身份）；socket 超时 10s 防 slowloris；body 上限 10MB
-  - 限流：每租户令牌桶（默认 60/min，可配）；用量计量表按天计请求
-  - 测试：HTTP 级隔离、配额 403、限流 429（0 回补确定性）、计量、list 分页、slowloris 超时
-- [x] M3：dogfood——订阅管家 Agent（`demo/`，离线零成本）
-  - `SubscriptionAgent`：意图识别 → 数据获取 → 作答；lookup 走混合检索，聚合走 `list_docs` 全量（RAG 应用的真实分工）
-  - 双租户演示：同一问题"腾讯视频多少钱"，两人得到不同答案（隔离的价值）
-  - 每个回答带 `sources: [doc_id]`，可追溯
-  - 作答默认模板，`composer` 可换 LLM（OpenAI 兼容接口）
-  - M3 逼出的 schema 修正：doc_id 从全局主键改为 `(tenant_id, doc_id)` 复合主键（两人都叫 "bill-txvideo" 很自然）；FTS 表加 `tenant_id` 列直接过滤，不再 JOIN；老库自动迁移（`test_migration.py`）
-
-## 评测
+### 本地管理界面
 
 ```bash
-python3 eval/run_eval.py --k 3
-# | hybrid | 0.929 | 1.000 |
-# | vector | 0.929 | 1.000 |
-# | fts    | 0.571 | 0.571 |
+tenant-rag-admin --api http://127.0.0.1:8000 --port 8002
 ```
 
-诚实声明：默认 FakeEmbedder 是**词法级**向量（哈希词袋），所以 vector 和 hybrid 持平——这个数字只验证管线正确性。换上真实 embedding 后，预期 hybrid > vector（改写 query 场景）> fts。评测集的价值是回归门禁，不是绝对分数。
+打开 http://127.0.0.1:8002，粘贴生成的租户 key，即可上传文本/Markdown、浏览分页文档、检索和删除。key 只保存在页面内存，不写浏览器存储。创建租户仍通过可信 Python 操作完成。两个服务默认仅监听 loopback，管理界面**不能作为公网管理后台**。安装 wheel 后也包含界面 HTML。
 
-## 面试 talking points
+## 接口约定
 
-1. **为什么混合**：纯向量对订单号/金额/人名翻车，纯关键词对同义改写翻车；RRF 免训练、鲁棒，是生产最稳的 baseline。
-2. **隔离的实现与取舍**：MVP 单库逻辑隔离（每条 SQL 强制 `tenant_id`）+ 测试锁死；升级路径是每租户独立 SQLite 文件（物理隔离），代价是文件数和备份复杂度。
-3. **CJK 的坑**：unicode61 vs trigram 的实测对比（"腾讯视频"整词问题），query 侧滑动 trigram。
-4. **评测驱动**：先有 golden 集再调参，门禁进 CI——和"护栏层"哲学一脉相承。
-5. **dogfood 驱动设计**：订阅管家 demo 跑起来第一天就发现 doc_id 全局主键是错的——真实多租户里"两人都叫 bill-txvideo"太自然了。改成复合主键 + 老库自动迁移，这就是"先有用户再有 schema"的价值。
+Python 用法见 [英文完整示例](README.md#python-api)。`TenantRAG` 支持 `with` 自动关闭；同租户相同 doc_id 会覆盖文本、metadata 和向量。全量遍历要显式翻页。
 
-## 找 bug 专项（2026-09-23，七轮共 26 项）
+除 health 外，HTTP 都需 `Authorization: Bearer <tenant-key>`。
 
-第一轮 8 项：假余弦（未归一化的点积）、index 缺输入校验、HTTP 未捕获异常致连接重置、全局 HTTP 锁包住 embedding 网络调用、限流桶无限增长、负数 k 切片语义、`register` 重复租户裸抛 SQLite 错误、无价格订阅作答空洞。顺带给 Store 加了 RLock + `busy_timeout`，配额检查与写入原子化。
+| 方法 | 路径 | 参数 / 返回 |
+|---|---|---|
+| POST | `/v1/index` | text，doc_id / metadata 可选；返回文档 ID |
+| POST | `/v1/search` | query、k；返回排名及 matched 通道 |
+| GET | `/v1/docs?limit=100&offset=0` | 分页文档 |
+| DELETE | `/v1/docs/<URL编码后的ID>` | deleted 布尔值 |
+| GET | `/v1/usage` | 配额、今日请求量、限流策略 |
+| GET | `/v1/health` | 无需鉴权，仅检查进程存活，不验证模型服务 |
 
-第二轮 5 项：重复 **api_key** 注册裸抛 IntegrityError（tenant_id 修了，key 漏了）、`api_key=None` 抛 AttributeError 而非 AuthError、空字符串进 FTS5 MATCH 语法错误、非整数 k 切片 TypeError、`list_docs` 无 offset 导致聚合在大租户下静默漏算（demo agent 改成分页取全量）。另补了 HTTP 缺的 `GET /v1/docs` 路由。
+错误码：参数 `400`，鉴权 `401`，配额 `403`，限流 `429`（含 Retry-After），意外后端/模型错误 `500`。JSON 请求体上限 10 MiB；搜索 k 限制在 1–100，HTTP 列表 limit 限制在 1–1000。默认每租户每进程 60 次/分钟。合法租户请求会计量，包括失败、限流以及 usage 请求本身；按服务器本地日期分天。Python 直接调用不参与 HTTP 限流与请求计量。
 
-第三轮 2 项（并发与 SQLite）：单连接多线程并发读写报 `InterfaceError: bad parameter or other API misuse`——`check_same_thread=False` 只关掉线程亲和检查，并不让并发 `execute()` 变安全；连带 `resolve_tenant` 偶发返回 None（合法 key 误判 401）。修法：Store 所有 `_con` 访问（读和写）全部走 RLock。另：双实例同 DB 时 RLock 跨实例不协调，配额超卖（quota=30 写出 31）；`service.index` 加 `BEGIN IMMEDIATE` 让"检查→写入"跨连接原子。WAL 快照语义经压测确认无半提交可见。
+## 接入真实 embedding
 
-第四轮 0 项（FTS 大小写，嫌疑排除）：实测 FTS5 trigram 默认 ASCII 大小写不敏感，`Tencent Video` 用 `tencent` 查 fts 通道正常命中；FakeEmbedder 也 lower，两侧一致。加回归测试锁死该行为，防将来换 tokenizer 静默退化。
+只有设置 `--embed-base-url` 或 EMBED_BASE_URL，HTTP 服务才使用真实模型：
 
-第五轮 2 项（安全与 DoS）：无 socket 超时 → slowloris 半截连接永久占线程，加 `Handler.timeout = 10`；`register` 弱 key（如 `"1"`）直接放行——产品决策：api_key 是唯一的鉴权因子，<8 字符注册时抛 ValueError（8 位随机 keyspace ~2e14，HTTP 爆破不可行）。另验证：深层嵌套 JSON 致 RecursionError 时进程不崩、返回 500 JSON（符合预期，加测试锁死）；10MB body 上限保留（embedding 上游本来也收不了 MB 级输入）。
+```bash
+export EMBED_BASE_URL='http://127.0.0.1:8080/v1'
+export EMBED_MODEL='your-served-embedding-model'
+export EMBED_API_KEY='local-demo'  # 仅用于忽略鉴权的本地端点的占位 Bearer 值。
+# 如果端点要求鉴权，请安全设置实际提供方密钥。
+tenant-rag --db semantic.db
+```
 
-第六轮 3 项（一致性与运维）：`upsert_doc`/`delete_doc` 多条 SQL 无 rollback——docs 写成功但 FTS 失败会留半提交开事务占写锁，补 try/except rollback；`delete` miss（0 行）同样开过隐式事务，补 commit 收尾否则一直占 RESERVED；`_migrate_v2` 半失败不可恢复（RENAME 后崩溃 → 数据孤儿在 docs_old，新表是空的，检测直接跳过），改包进显式事务、失败整体回滚、下次启动重试。另加 `purge_usage(keep_days=90)`：usage_meter 按 (tenant, day) 无限增长，建议定期清理。
+Python 可传入 `OpenAIEmbedder(api_key=..., base_url=..., model=...)`。使用提供方明确支持的 embeddings 接口；远程服务应使用 HTTPS。文档和查询会发往该端点，可能产生费用，需自行确认隐私处理政策。不要提交密钥。
 
-第七轮 4 项（API 一致性与 demo）：Python `usage()` 缺 `requests_today`（HTTP 有），对齐补上；demo 里显式币种限定被 total/max 静默忽略（"用美元结算的一共多少钱"把 CNY 也算进去），改为限定生效、无结果时明确提示；`detect_currency` 不认识欧元，补 EUR；`_answer_lookup` 传给 composer 的文本不截断（换 LLM composer 会爆 token），加 500 字截断 + 省略号标记，sources 不受影响。意图优先级（total > max > list > lookup）经多意图 query 验证合理，不动。HTTP search k 上限 100 而 Python API 实际受候选池（vec_k+fts_k）约束——文档说明，不做硬对齐。
+**一个数据库固定使用同一 embedding 模型。更换提供方、模型或维度，必须重新索引所有文档。** 当前不保存模型身份，不会自动迁移向量。维度不同的旧向量被跳过，同维度换模型无法自动识别。建议在新数据库完成重建和验证。
 
-测试从 24 → 33 → 40 → 42 → 44 → 47 → 51 → 58，全绿；评测分数未动（hybrid 0.929/1.000）。`tests/test_robustness.py` 是回归资产。
+## 评测与测试
 
-## 运维注意事项
+```bash
+python -m unittest discover -v
+python eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
+python eval/run_eval.py --json --output eval-report.json
+python demo/run_demo.py
+```
 
-- **备份**：WAL 模式下 DB 由 `*.db` + `*.db-wal` + `*.db-shm` 三个文件组成，只拷 `*.db` 会丢最近提交。备份前先 `PRAGMA wal_checkpoint(TRUNCATE)`，或用 `VACUUM INTO 'backup.db'` / `sqlite3 db .dump`。
-- **usage_meter 清理**：`store.purge_usage(keep_days=90)`，建议 cron 每月跑一次。
-- **api_key 策略**：注册强制 ≥8 字符；key 即租户身份，泄漏=租户接管，请用随机字符串并走 HTTPS（或只绑 127.0.0.1）。
-- **HTTP k 上限**：`/v1/search` 的 k 钳制到 100；Python API 的 k 实际受候选池（vec_k=50 + fts_k=50）约束，传再大也拿不到更多。
+默认只对 **pipeline 回归集**设置门禁；另有中英双语 semantic 挑战集，默认输出诊断指标。数据是人工合成用例，不是生产质量基准。报告区分模型、数据集及 hybrid/vector/fts 通道，计算 recall@k 与截断排名上的倒数排名指标。
 
-## 非目标（守住切口）
+明确选择真实端点后再执行：
 
-- 分布式、高并发：个人级场景不需要
-- 大规模 ANN：单租户几千文档暴力检索足够，升级路径是 sqlite-vss
-- learned reranker：RRF 够用，留接口
+```bash
+python eval/run_eval.py --embedder openai --allow-provider-requests \
+  --base-url http://127.0.0.1:8080/v1 --model your-served-embedding-model \
+  --gate-suite semantic --output semantic-report.json
+```
+
+设置 EMBED_API_KEY；仅对忽略鉴权的本地端点使用非敏感占位值。该命令会发送评测文本到指定模型服务，可能付费。**离线测试不能证明真实模型质量**，也不保证 hybrid 在所有数据集都胜过 vector。请用已获授权、有代表性的数据实测后制定门槛。
+
+## 架构和边界
+
+```text
+API key → tenant ID
+查询 ┬→ embedding → 租户内余弦召回 ┐
+     └→ 安全 trigram 查询 → 租户内 FTS ├→ RRF → 租户内文档
+                                       ┘
+```
+
+FTS 表含未索引的 tenant_id 列，查询显式过滤。查询文字先分词，不直接拼接 FTS 语法；少于三个字符的中文词无法由 trigram 命中，依赖向量通道。向量检索扫描租户语料，适合个人规模，容量与延迟需自行测量。RRF 分数不是概率或置信度。
+
+- **不是物理隔离**：多个租户共用数据库，通过逻辑过滤隔离；不提供静态加密，需保护主机、数据库文件和备份。key 保存为 SHA-256 哈希，泄露 Bearer key 相当于泄露租户权限，目前无内置轮换/撤销流程。
+- **不是公网加固服务**：标准库线程 HTTP 适合本地或可信环境。公网部署前需 TLS、网关、请求/并发限制、监控与安全审查；进程内限流不跨 worker 共享。
+- **备份**：使用 SQLite 在线 backup API 或 VACUUM INTO，并验证恢复。WAL 模式不能只复制运行中的 .db；checkpoint 后若写入恢复，复制仍不安全。文件级复制须先停止所有写入者。
+- **维护**：`rag.store.purge_usage(keep_days=90)` 清理旧计量行。旧全局 doc_id schema 在打开时事务迁移，操作前保存已验证的备份。
+- **尚未证明**：真实模型效果/可用性、生产负载、完整浏览器交互、分布式部署与对抗性安全审计。正式发布前按[清单](docs/RELEASING.md)检查。
+
+## License
+
+[MIT](LICENSE)。

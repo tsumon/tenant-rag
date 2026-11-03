@@ -89,11 +89,15 @@ class Store:
         # 调用串行化了，一个慢请求堵死全服——修掉了）。
         self.lock = threading.RLock()
         self._con = sqlite3.connect(path, check_same_thread=False)
-        self._con.execute("PRAGMA journal_mode=WAL")
-        self._con.execute("PRAGMA busy_timeout=5000")
-        self._con.execute("PRAGMA foreign_keys=ON")
-        self._con.executescript(SCHEMA)
-        self._migrate_v2()
+        try:
+            self._con.execute("PRAGMA journal_mode=WAL")
+            self._con.execute("PRAGMA busy_timeout=5000")
+            self._con.execute("PRAGMA foreign_keys=ON")
+            self._con.executescript(SCHEMA)
+            self._migrate_v2()
+        except Exception:
+            self._con.close()
+            raise
         # 注意：check_same_thread=False 只关掉"跨线程使用"的检查，
         # 并不让并发 execute() 变安全——CPython 的 sqlite3 连接对象
         # 本身不支持多线程同时 execute（会报 InterfaceError:
@@ -137,6 +141,7 @@ class Store:
                     " FROM docs_old"
                 )
                 con.execute("DROP TABLE docs_old")
+                con.execute("CREATE INDEX IF NOT EXISTS idx_docs_tenant ON docs(tenant_id)")
             fts_cols = [r[1] for r in con.execute("PRAGMA table_info(docs_fts)")]
             if fts_cols and "tenant_id" not in fts_cols:
                 con.execute("DROP TABLE docs_fts")
@@ -392,4 +397,5 @@ class Store:
             return cur.rowcount
 
     def close(self) -> None:
-        self._con.close()
+        with self.lock:
+            self._con.close()

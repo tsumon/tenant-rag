@@ -48,6 +48,7 @@ class ServerTest(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
+        self.server.rag.close()
         self.thread.join(timeout=5)
         self.tmp.cleanup()
 

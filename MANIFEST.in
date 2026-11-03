@@ -1,0 +1,6 @@
+include LICENSE README.zh-CN.md
+recursive-include docs *.md
+recursive-include eval *.py *.jsonl *.md
+recursive-include demo *.py
+recursive-include tests *.py
+recursive-include scripts *.py

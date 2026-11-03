@@ -2,170 +2,173 @@
 
 # tenant-rag
 
-**Multi-tenant hybrid retrieval for personal AI apps.**
-Vector + keyword search, per-tenant isolation, one SQLite file, zero ops.
+**Your users' documents. Their own search results. One SQLite database.**
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)](https://www.python.org/)
-[![SQLite + FTS5](https://img.shields.io/badge/storage-SQLite%20%2B%20FTS5-green)](https://www.sqlite.org/)
-[![Zero dependencies](https://img.shields.io/badge/deps-zero_(stdlib_only)-orange)](#)
-[![Tests](https://img.shields.io/badge/tests-58_passing-brightgreen)](#testing)
-[![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
+Small, tenant-scoped hybrid retrieval for personal AI applications.
 
-[中文文档](README.zh-CN.md)
+[![CI](https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
+![Runtime dependencies: zero](https://img.shields.io/badge/runtime_dependencies-zero-green)
+[![MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
+
+[中文](README.zh-CN.md) · [Release checklist](docs/RELEASING.md) · [Evaluation](#evaluation)
 
 </div>
 
----
+## What you get
 
-## What is this?
+- **Hybrid search:** cosine vectors + SQLite FTS5 trigram keywords, combined with reciprocal rank fusion (RRF).
+- **Logical tenant isolation:** API keys resolve to tenants; documents, searches, deletion, quotas and usage are tenant-scoped. Different tenants can reuse a document ID.
+- **Small operational footprint:** a SQLite database, Python standard library runtime, optional OpenAI-compatible embeddings.
+- **Usable interfaces:** Python library, bearer-auth HTTP API, and a local browser administration tool.
+- **Regression coverage:** isolation, migration rollback, concurrent quota enforcement, malformed requests and deterministic retrieval evaluation.
 
-When your app needs to *"search each user's own private data"*, plug this in. It's a lightweight retrieval backend for indie developers' personal AI apps — **not** another Elasticsearch.
+This is a **retrieval component**, not a complete knowledge-base product or hosted SaaS. It does not generate answers, parse PDFs, chunk long documents, manage user accounts, enforce document ACLs inside a tenant, or provide distributed storage. The included subscription agent demonstrates retrieval with templated answers, not an LLM agent platform.
 
-One-liner: hybrid retrieval (semantic vectors + FTS5 keyword/grep) with tenant-grade isolation, backed by a single SQLite file.
+## Install from source
 
-## Why this isn't reinventing the wheel
+Requires **Python 3.10+** and SQLite compiled with **FTS5 and the trigram tokenizer** (SQLite 3.34+). The core has no third-party runtime dependencies. Building packages uses setuptools.
 
-ES / OpenSearch / Qdrant / pgvector are wheels — but they're **heavy infrastructure**: deploy it, operate it, and multi-tenant isolation is DIY (row-level security, payload filters; miss one spot and data leaks across tenants). This project's cut is **"small and multi-tenant"**:
+```bash
+git clone https://github.com/tsumon/tenant-rag.git
+cd tenant-rag
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install .
+```
 
-- **Personal-scale corpora** (a few thousand docs per tenant) — brute-force vector search is plenty; ANN is overkill
-- **Isolation out of the box** — API key *is* the tenant; cross-tenant leakage is locked down by tests
-- **Eval-gated retrieval** — change the tokenizer or swap the embedding model, check the numbers before shipping
+This documents a source install, not an already-published PyPI release. Check SQLite support:
 
-If it grows past this cut, it collides with the wheels — see [Non-goals](#non-goals).
+```bash
+python -c "import sqlite3; sqlite3.connect(':memory:').execute(\"CREATE VIRTUAL TABLE probe USING fts5(text, tokenize='trigram')\")"
+```
 
-## Features
+## Five-minute local demo
 
-| | |
-|---|---|
-| 🔀 **Hybrid retrieval** | Vector (cosine) + FTS5 trigram, fused with RRF — no training, the most robust production baseline |
-| 🔒 **Tenant isolation** | API key = tenant identity; every query is tenant-scoped; leakage covered by dedicated tests |
-| 🌏 **CJK-friendly** | FTS5 trigram + sliding-trigram query rewriting; short CJK terms fall back to the vector channel — that's the point of hybrid |
-| 📊 **Eval gate** | Golden set + `run_eval.py --min-recall 0.8` — tune parameters against numbers, not vibes |
-| 🧾 **Quotas & metering** | Per-tenant doc quotas, daily request metering, token-bucket rate limiting (60/min default) |
-| 🌐 **HTTP API** | Stdlib-only server, zero dependencies: `POST /v1/index`, `POST /v1/search`, `DELETE /v1/docs/<id>`, `GET /v1/docs?limit=&offset=`, `GET /v1/usage`, `GET /v1/health` |
-| 🖥️ **Admin UI** | Upload docs (auto-embedded server-side), browse/delete, hybrid search with channel badges |
-| 🐶 **Dogfooded** | Ships with a subscription-manager agent demo built on top of it |
+Create one random tenant key and initialize **the same database** the server will use. Keep this shell open for the curl commands; tenant registration is a one-time operation and rejects duplicates.
 
-## Quickstart
+```bash
+export TENANT_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+python - <<'PY'
+import os
+from tenantrag import TenantRAG
+with TenantRAG('tenantrag.db') as rag:
+    rag.register('demo-user', os.environ['TENANT_KEY'], quota_docs=5000)
+    rag.index(os.environ['TENANT_KEY'], 'Netflix renews at $15.49/month', doc_id='bill-1')
+    print(rag.search(os.environ['TENANT_KEY'], 'Netflix price'))
+PY
+
+# Run in another terminal, from this directory with the venv activated:
+tenant-rag --db tenantrag.db --port 8000
+```
+
+Back in the shell holding TENANT_KEY:
+
+```bash
+curl -sS http://127.0.0.1:8000/v1/search \
+  -H "Authorization: Bearer $TENANT_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"Netflix price","k":5}'
+```
+
+Default embeddings are deterministic **lexical hash vectors**, not semantic embeddings. No model downloads, provider calls or API cost are needed for this demo.
+
+### Local admin UI
+
+```bash
+tenant-rag-admin --api http://127.0.0.1:8000 --port 8002
+```
+
+Open http://127.0.0.1:8002 and paste the generated tenant key. Browse, upload text/Markdown, search and delete documents. The key stays in page memory, not browser storage. Tenant creation remains a trusted Python operation. Both servers bind to loopback by default; the admin UI is a local tool, **not a public admin console**. The wheel includes its HTML asset.
+
+## Python API
 
 ```python
 from tenantrag import TenantRAG
-from tenantrag.embed import FakeEmbedder  # offline; swap in OpenAIEmbedder for prod
+from tenantrag.embed import FakeEmbedder
 
-rag = TenantRAG("app.db", embedder=FakeEmbedder())
-rag.register("user-123", api_key="sk-xxx", quota_docs=5000)
-
-rag.index("sk-xxx", "Netflix renews at $15.49/month", doc_id="bill-1")
-hits = rag.search("sk-xxx", "how much is Netflix")
-# [{'doc_id': 'bill-1', 'text': ..., 'score': ..., 'matched': ['vector', 'fts']}]
+with TenantRAG('example.db', embedder=FakeEmbedder()) as rag:
+    rag.register('alice', 'example-only-key-change-me')
+    rag.index('example-only-key-change-me', 'Order ABC-2026 shipped', doc_id='order')
+    hits = rag.search('example-only-key-change-me', 'ABC-2026', k=5)
+    docs = rag.list_docs('example-only-key-change-me', limit=100, offset=0)
+    usage = rag.usage('example-only-key-change-me')
+    deleted = rag.delete('example-only-key-change-me', 'order')
 ```
 
-Production embeddings via any OpenAI-compatible API (DeepSeek, SiliconFlow, local vLLM…):
+Use randomly generated secrets in real applications. Indexing an existing ID replaces its text, metadata and embedding. Pagination is explicit. Python calls do not increment HTTP request metering or use the HTTP rate limiter.
 
-```python
-from tenantrag.embed import OpenAIEmbedder
-emb = OpenAIEmbedder(api_key="...", base_url="https://api.siliconflow.cn/v1",
-                     model="BAAI/bge-m3")
-```
+## HTTP API
 
-Or over HTTP:
+Except health, endpoints require `Authorization: Bearer <tenant-key>`.
+
+| Method | Endpoint | Payload / result |
+|---|---|---|
+| POST | `/v1/index` | `text`, optional `doc_id`, `metadata` → document ID |
+| POST | `/v1/search` | `query`, optional `k` → ranked hits with `matched` channels |
+| GET | `/v1/docs?limit=100&offset=0` | paginated documents |
+| DELETE | `/v1/docs/<url-encoded-id>` | `deleted` boolean |
+| GET | `/v1/usage` | document quota, today's requests, rate policy |
+| GET | `/v1/health` | unauthenticated process liveness, not provider readiness |
+
+Errors: malformed input `400`, invalid key `401`, quota `403`, rate limit `429` with `Retry-After`, unexpected backend/provider failure `500`. JSON bodies are limited to 10 MiB. Search `k` clamps to 1–100, list `limit` to 1–1000. HTTP requests by valid tenants are counted, including failed/rate-limited requests and the usage request itself. Daily usage uses the server's local date. Default rate limit is 60/minute per tenant and per server process.
+
+## Real embeddings: explicit opt-in
+
+The API server uses a real provider only when `--embed-base-url` or `EMBED_BASE_URL` is set:
 
 ```bash
-PYTHONPATH=. python3 -m tenantrag.server --db tenantrag.db --port 8000
-
-curl -H "Authorization: Bearer sk-xxx" -H "Content-Type: application/json" \
-  -d '{"query":"how much is Netflix","k":5}' \
-  http://127.0.0.1:8000/v1/search
+export EMBED_BASE_URL='http://127.0.0.1:8080/v1'
+export EMBED_MODEL='your-served-embedding-model'
+export EMBED_API_KEY='local-demo'  # Dummy bearer value ONLY for a local no-auth endpoint.
+# For authenticated endpoints, securely set the actual provider key instead.
+tenant-rag --db semantic.db
 ```
 
-Error mapping: bad key → `401`, quota/isolation → `403`, rate limit → `429` + `Retry-After`.
+For Python, supply `OpenAIEmbedder(api_key=..., base_url=..., model=...)` to `TenantRAG`. Use a provider's documented embeddings-compatible endpoint, HTTPS for remote services, and an appropriate data-processing policy. Documents and queries are transmitted to that provider and may incur charges. Never commit credentials.
 
-## Architecture
-
-```
-search(query)
- ├─ query → embedding        → vector_search   (cosine; non-positive filtered)
- ├─ query → build_fts_query  → fts_search      (FTS5 trigram, tenant-scoped)
- └─ RRF fusion → fetch_docs → hits (each tagged: matched = ["vector"] / ["fts"] / both)
-```
-
-Three things that are easy to get wrong (marked in code):
-
-1. **Tenant-scoped FTS** — the FTS5 table doesn't store `tenant_id`; every full-text query must be tenant-filtered or one `MATCH` leaks across tenants. Locked by `test_isolation.py`.
-2. **CJK tokenization** — `unicode61` indexes "腾讯视频" as one token, so single-character queries miss; trigram + query-side sliding trigrams fix it. Terms too short for trigram fall back to the vector channel.
-3. **User input into MATCH** — quotes / `AND` / parens trigger FTS5 syntax errors; `build_fts_query` extracts tokens and escapes them instead.
-
-## Admin UI (`admin/`)
-
-A stdlib-only web UI that reverse-proxies the HTTP API (same origin, no CORS issues, never touches SQLite directly):
-
-```bash
-# 1. start the API
-PYTHONPATH=. python3 -m tenantrag.server --db tenantrag.db --port 8000
-# 2. start the admin UI
-python3 admin/admin_server.py --api http://127.0.0.1:8000 --port 8002
-# 3. open http://127.0.0.1:8002/ and paste a tenant API key
-```
-
-- Tenant overview (docs/quota, today's requests, rate limit)
-- Upload docs — paste text or drop `.txt`/`.md` files; embedding happens server-side
-- Browse (paginated) & delete docs
-- Hybrid search with per-hit channel badges (vector / keyword) and RRF scores
-
-> The key lives only in page JS memory. The admin UI has no auth of its own and binds `127.0.0.1` — it's a local ops tool, don't expose it publicly. Tenant creation stays in the Python API (`TenantRAG.register`).
+**Choose one embedding model per database. Changing the provider, model or dimensions requires reindexing all documents.** Model identity is not persisted or automatically migrated. Different dimensions are skipped by vector search, and same-dimension model changes are not detectable. A separate new database is the safest migration target.
 
 ## Evaluation
 
 ```bash
-python3 eval/run_eval.py --k 3
-# | hybrid | 0.929 | 1.000 |   (recall@3, MRR)
-# | vector | 0.929 | 1.000 |
-# | fts    | 0.571 | 0.571 |
+python -m unittest discover -v
+python eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
+python eval/run_eval.py --json --output eval-report.json
+python demo/run_demo.py
 ```
 
-Honest disclaimer: the default `FakeEmbedder` is a **lexical** hash-bag embedder, so vector ≈ hybrid here — these numbers validate the pipeline, not semantic quality. With real embeddings, expect hybrid > vector (paraphrased queries) > fts. The eval set's value is as a regression gate, not an absolute score.
+The default gate checks the **pipeline regression suite** using fake lexical embeddings. A separate bilingual semantic challenge suite reports diagnostic results; synthetic fixtures are not a production quality benchmark. Reports identify the embedder and suite. Recall@k and reciprocal rank at the retrieved cutoff compare hybrid, vector and keyword channels.
 
-## Design notes
+To deliberately evaluate an actual embeddings endpoint against the included synthetic texts:
 
-1. **Why hybrid** — pure vectors fumble order numbers / amounts / names; pure keywords fumble paraphrases. RRF needs no training and is the steadiest production baseline.
-2. **Isolation, and its trade-offs** — MVP: single DB, logical isolation (every SQL carries `tenant_id`) + tests. Upgrade path: one SQLite file per tenant (physical isolation), at the cost of file count and backup complexity.
-3. **The CJK trap** — measured `unicode61` vs trigram on real queries ("腾讯视频" indexed whole, single chars unfindable); query-side sliding trigrams.
-4. **Eval-driven** — golden set first, tune against it, gate in CI. Same philosophy as guardrail layers.
-5. **Dogfood-driven schema** — the subscription-manager demo immediately showed `doc_id` as a global primary key was wrong ("bill-txvideo" in two tenants is *natural*). Became a `(tenant_id, doc_id)` composite key with automatic migration for old DBs — the value of having a user before having a schema.
+```bash
+python eval/run_eval.py --embedder openai --allow-provider-requests \
+  --base-url http://127.0.0.1:8080/v1 --model your-served-embedding-model \
+  --gate-suite semantic --output semantic-report.json
+```
 
-## Engineering log — 7 bug-hunt rounds, 26 issues (2026-09-23)
+Set EMBED_API_KEY (use a non-secret dummy value only for local endpoints that ignore authentication). This opt-in makes network requests and can incur cost; inspect the dataset and endpoint first. **No real-model quality result is claimed by this repository's offline tests.** Hybrid is not guaranteed to outperform vectors on every dataset. Choose quality thresholds after measuring representative, consented data.
 
-Every suspected bug was reproduced before fixing; every fix got a regression test. Tests grew **24 → 58**, all green; eval scores unchanged.
+## How retrieval works
 
-| Round | Focus | Found & fixed |
-|---|---|---|
-| 1 | API correctness | 8 — unnormalized dot product posing as cosine; missing input validation on index; uncaught HTTP exceptions → connection resets; global HTTP lock wrapping embedding network calls; unbounded rate-limit buckets; negative-`k` slicing; bare SQLite errors on duplicate tenant; hollow answers for priceless subscriptions |
-| 2 | Robustness | 5 — duplicate `api_key` → raw `IntegrityError`; `api_key=None` → `AttributeError` instead of `AuthError`; empty string → FTS5 syntax error; non-int `k` → `TypeError`; `list_docs` without offset → silent undercount on large tenants |
-| 3 | Concurrency & SQLite | 2 — `InterfaceError` under multithreaded load (`check_same_thread=False` doesn't make concurrent `execute()` safe; all connection access now under RLock); cross-process quota oversell (quota=30 wrote 31; `BEGIN IMMEDIATE` makes check-then-write atomic) |
-| 4 | FTS casing | 0 — verified FTS5 trigram is ASCII case-insensitive; locked with regression tests |
-| 5 | Security & DoS | 2 — slowloris (no socket timeout; added `timeout = 10`); weak API keys rejected at registration (`<8` chars refused — the key *is* the identity) |
-| 6 | Consistency & ops | 3 — missing rollback in multi-statement upsert; delete-miss holding a write lock without commit; migration half-failure silently orphaning data (now wrapped in an explicit transaction, verified fail → old schema intact → retry succeeds) |
-| 7 | API & demo consistency | 4 — Python `usage()` missing `requests_today`; currency filter silently ignored by totals in the demo; EUR not detected; unbounded composer input now truncated at 500 chars |
+```text
+API key → tenant ID
+query ┬→ embedder → tenant-filtered cosine candidates ┐
+      └→ safe trigram FTS query → tenant-filtered hits ├→ RRF → tenant-scoped documents
+                                                      ┘
+```
 
-Regression assets live in `tests/test_robustness.py`.
+FTS stores `tenant_id` as an unindexed column and filters it explicitly. Query text is tokenized rather than interpolated as FTS syntax. Short CJK terms cannot match the trigram channel and rely on vectors. The vector channel scans each tenant's corpus; start with personal-scale data and measure latency rather than assuming a capacity guarantee. RRF scores are ranking scores, not probabilities or confidence estimates.
 
-## Ops notes
+## Operating boundaries
 
-- **Backup** — in WAL mode the DB is three files (`*.db` + `*.db-wal` + `*.db-shm`); copying only `*.db` loses recent commits. Run `PRAGMA wal_checkpoint(TRUNCATE)` first, or use `VACUUM INTO 'backup.db'` / `sqlite3 db .dump`.
-- **Usage table growth** — `store.purge_usage(keep_days=90)`; run it monthly via cron.
-- **Key policy** — registration enforces ≥ 8 chars; the key *is* the tenant identity (leak = tenant takeover). Use random strings and HTTPS (or bind `127.0.0.1` only).
-- **`k` limits** — HTTP `/v1/search` clamps `k` to 100; the Python API's `k` is bounded by the candidate pool (`vec_k=50` + `fts_k=50`).
-
-## Demo: subscription-manager agent (`demo/`)
-
-A zero-model-cost agent dogfooding the retrieval layer: intent detection → data fetch → templated answers, every answer citing `sources: [doc_id]`. Lookup goes through hybrid retrieval; aggregations (total / most expensive / list) page through `list_docs` — the real division of labor in RAG apps. Two tenants asking "how much is 腾讯视频" get different answers: isolation you can see.
-
-## Non-goals
-
-- Distributed / high-concurrency serving — personal-scale doesn't need it
-- Large-scale ANN — brute force is fine for thousands of docs per tenant; upgrade path is `sqlite-vss`
-- Learned rerankers — RRF is enough, interface left open
+- **Not internet-hardened:** stdlib threaded HTTP is intended for local/trusted deployments. Use TLS, gateway authentication controls, request/concurrency limits and monitoring before any public deployment. In-process rate limits are not global across workers.
+- **Shared storage:** logical isolation is not physical isolation or encryption. Protect database files, host access and backups. Keys are stored as SHA-256 hashes; a leaked bearer key grants tenant access. There is no built-in key rotation/revocation workflow.
+- **Backups:** use SQLite's online backup API or `VACUUM INTO`, then test restoration. Copying only a live `.db` file is unsafe in WAL mode, even after a checkpoint if writers resume. Stop all writers before filesystem-level copies.
+- **Maintenance:** `rag.store.purge_usage(keep_days=90)` removes older metering rows. Legacy global document-ID schemas migrate transactionally on open; take a verified backup first.
+- **Not yet covered:** real-provider availability/quality, production load, full browser interaction QA, distributed deployment and adversarial security audit. See the [release checklist](docs/RELEASING.md) before publishing.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE).

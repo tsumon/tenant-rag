@@ -56,7 +56,7 @@ class RateLimiter:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "tenant-rag/0.2"
+    server_version = "tenant-rag/0.3"
     # socket 超时（秒）：防 slowloris。客户端连上只发半截 header/body
     # 时，无超时的线程会永远挂起，攻击者低成本耗尽线程池（Round 5 实测）。
     # 正常请求（本地/内网，body 上限 10MB）10s 绰绰有余。
@@ -281,8 +281,16 @@ def make_server(
     rate_capacity: int = 60,
     rate_per_seconds: int = 60,
 ) -> ThreadingHTTPServer:
+    if type(rate_capacity) is not int or rate_capacity <= 0:
+        raise ValueError("rate_capacity must be a positive integer")
+    if type(rate_per_seconds) is not int or rate_per_seconds < 0:
+        raise ValueError("rate_per_seconds must be a non-negative integer")
     rag = TenantRAG(db_path, embedder=embedder or FakeEmbedder())
-    server = ThreadingHTTPServer((host, port), Handler)
+    try:
+        server = ThreadingHTTPServer((host, port), Handler)
+    except Exception:
+        rag.close()
+        raise
     server.rag = rag
     # 注意：不再设 server.lock —— Store 自带 RLock，service.index 的
     # embedding 网络调用在锁外，慢请求不会堵死其他租户。
@@ -303,19 +311,27 @@ def main():
     ap.add_argument("--embed-base-url", default=os.environ.get("EMBED_BASE_URL"))
     ap.add_argument("--embed-model", default=os.environ.get("EMBED_MODEL", "text-embedding-3-small"))
     args = ap.parse_args()
+    if args.rate <= 0:
+        ap.error("--rate must be a positive integer")
 
     embedder = None
     if args.embed_base_url:
         api_key = os.environ.get("EMBED_API_KEY", "")
-        embedder = OpenAIEmbedder(
-            api_key=api_key, base_url=args.embed_base_url, model=args.embed_model
-        )
+        try:
+            embedder = OpenAIEmbedder(
+                api_key=api_key, base_url=args.embed_base_url, model=args.embed_model
+            )
+        except ValueError as exc:
+            ap.error(str(exc) + "; configure EMBED_API_KEY / --embed-base-url / --embed-model")
     server = make_server(args.db, args.host, args.port, embedder, args.rate, 60)
     print(f"tenant-rag serving on {args.host}:{args.port} db={args.db}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        server.server_close()
+        server.rag.close()
 
 
 if __name__ == "__main__":
