@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tenantrag import TenantRAG
 from tenantrag.embed import FakeEmbedder, OpenAIEmbedder
-from tenantrag.search import build_fts_query, hybrid_search
+from tenantrag.search import build_fts_query, hybrid_search, validate_fusion
 from eval.local_embedder import LocalModelError, LocalSentenceTransformer
 
 MODES = ("hybrid", "vector", "fts")
@@ -130,7 +130,7 @@ def mrr(expected, ranked):
     return 0.0
 
 
-def evaluate(docs, queries, embedder, k=3):
+def evaluate(docs, queries, embedder, k=3, *, fusion='rrf', lexical_weight=None):
     """Index a fresh temporary corpus and compare the real hybrid search path.
 
     Results contain no wall-clock timings or timestamps, allowing deterministic
@@ -141,6 +141,7 @@ def evaluate(docs, queries, embedder, k=3):
         raise ValueError("k must be a positive integer")
     if not docs or not queries:
         raise ValueError("evaluation requires documents and queries")
+    weight = validate_fusion(fusion, lexical_weight)
     details = []
     with tempfile.TemporaryDirectory(prefix="tenant-rag-eval-") as directory:
         rag = TenantRAG(path=os.path.join(directory, "eval.db"), embedder=embedder)
@@ -151,20 +152,25 @@ def evaluate(docs, queries, embedder, k=3):
                           metadata=doc.get("metadata"))
             for query in queries:
                 qvec = embedder.embed([query["query"]])[0]
-                vector = [
+                vector_candidates = [
                     (doc_id, score) for doc_id, score in
                     rag.store.vector_search("eval-tenant", qvec, CANDIDATES) if score > 0
-                ][:k]
+                ]
                 fts_query = build_fts_query(query["query"])
-                fts = (rag.store.fts_search("eval-tenant", fts_query, CANDIDATES)
-                       if fts_query else [])[:k]
+                fts_candidates = (rag.store.fts_search("eval-tenant", fts_query, CANDIDATES)
+                                  if fts_query else [])
+                vector, fts = vector_candidates[:k], fts_candidates[:k]
                 hybrid = [(hit["doc_id"], hit["score"]) for hit in hybrid_search(
-                    rag.store, "eval-tenant", query["query"], qvec, k=k)]
+                    rag.store, "eval-tenant", query["query"], qvec, k=k,
+                    fusion=fusion, lexical_weight=weight)]
                 ranked = {"hybrid": hybrid, "vector": vector, "fts": fts}
                 details.append({
                     "id": query["id"], "suite": query["suite"],
                     "query": query["query"], "expected": query["expected"],
                     "tags": query.get("tags", []),
+                    'candidate_sha256': {name: hashlib.sha256(json.dumps(values,
+                        ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
+                        for name, values in (('vector', vector_candidates), ('fts', fts_candidates))},
                     "ranked": {mode: [doc_id for doc_id, _ in ranked[mode]] for mode in MODES},
                     "metrics": {mode: {
                         "recall_at_k": recall_at_k(query["expected"], ranked[mode], k),
@@ -211,6 +217,7 @@ def _print_report(report):
     print(f"Evaluation: {report['dataset']['documents']} documents, k={report['k']}, "
           f"embedder={backend['name']}, model={backend['model']}")
     print("Semantic quality: " + report["semantic_quality"])
+    print(f"Fusion: {report['retrieval']['fusion']}; lexical weight: {report['retrieval']['lexical_weight']}")
     print("Synthetic fixtures only. No production-quality or hybrid-superiority claim.")
     for name, suite in report["suites"].items():
         label = "offline diagnostic only" if name == "semantic" and backend["name"] == "fake" else "measured"
@@ -229,6 +236,9 @@ def main(argv=None):
     parser.add_argument("--dry-run", action="store_true", help="Validate inputs and print request plan without creating an embedder or making requests")
     parser.add_argument("--golden", type=Path, default=DEFAULT_GOLDEN)
     parser.add_argument("--k", type=_positive_int, default=3)
+    parser.add_argument('--fusion', choices=('rrf', 'score'), default='rrf')
+    parser.add_argument('--lexical-weight', type=_threshold,
+                        help='Cosine-score lexical bonus cap, 0..1; score fusion only (default 0.2)')
     parser.add_argument("--min-recall", type=_threshold, default=0.0)
     parser.add_argument("--min-mrr", type=_threshold, default=0.0)
     parser.add_argument("--suite", choices=("all",) + SUITES, default="all")
@@ -245,6 +255,10 @@ def main(argv=None):
     parser.add_argument("--json", action="store_true", help="Print the complete JSON report")
     parser.add_argument("--output", type=Path, help="Also save the JSON report to this file")
     args = parser.parse_args(argv)
+    try:
+        weight = validate_fusion(args.fusion, args.lexical_weight)
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.model_path is not None and args.embedder != "local":
         parser.error("--model-path requires --embedder local")
     if args.embedder == "local" and args.model_path is None and not args.dry_run:
@@ -268,6 +282,7 @@ def main(argv=None):
     if args.dry_run:
         print(json.dumps({"dry_run": True, "dataset": dataset,
               "backend": args.embedder, "k": args.k, "gate_suite": args.gate_suite,
+              'fusion': args.fusion, 'lexical_weight': weight,
               "planned_embedding_requests": len(docs) + len(queries) if args.embedder == "openai" else 0,
               "provider_requests_made": 0,
               "planned_embedding_texts": len(docs) + len(queries),
@@ -292,7 +307,8 @@ def main(argv=None):
     else:
         embedder = FakeEmbedder()
     try:
-        report = evaluate(docs, queries, embedder, args.k)
+        report = evaluate(docs, queries, embedder, args.k,
+                          fusion=args.fusion, lexical_weight=weight)
     except Exception as exc:
         # Provider error messages/bodies can contain credentials or input. The
         # exception class is sufficient here; callers can debug in their own app.
@@ -314,7 +330,9 @@ def main(argv=None):
         "dataset": dataset,
         "implementation_sha256": implementation_fingerprint(),
         "python_version": platform.python_version(),
-        "retrieval": {"rrf_k": 60, "positive_cosine_only": True, "chunking": False},
+        "retrieval": {"rrf_k": 60 if args.fusion == 'rrf' else None,
+                      'fusion': args.fusion, 'lexical_weight': weight,
+                      "positive_cosine_only": True, "chunking": False},
         "backend": backend,
         "sqlite_version": sqlite3.sqlite_version,
         "semantic_quality": (

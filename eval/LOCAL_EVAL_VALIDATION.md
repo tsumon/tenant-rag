@@ -1,5 +1,9 @@
 # Local evaluation validation, 2026-11-05
 
+Historical record from before the first actual model run. Subsequent
+fixed-snapshot measurements and their limitations are described in
+[the fusion study](../docs/FUSION.md); the initial checks below are preserved.
+
 This is a development validation record, not a release or a real-model quality
 result. Base: tenant-rag v0.4.0, commit
 `6c858a39468e6e4f101f32aed6dc01fb84d5f058`.

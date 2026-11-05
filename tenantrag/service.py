@@ -13,7 +13,7 @@ import json
 import time
 
 from .embed import Embedder, FakeEmbedder
-from .search import hybrid_search
+from .search import hybrid_search, validate_fusion
 from .store import IsolationError, Store, _pack
 from .chunking import chunk_text
 from .identity import EmbeddingIdentity
@@ -227,10 +227,12 @@ class TenantRAG:
         self.embedder = embedder
         return result
 
-    def search(self, api_key: str, query: str, k: int = 10) -> list[dict]:
+    def search(self, api_key: str, query: str, k: int = 10, *,
+               fusion: str = 'rrf', lexical_weight: float | None = None) -> list[dict]:
         if not isinstance(query, str):
             raise ValueError("query must be a string")
         tid = self._tenant(api_key)
+        weight = validate_fusion(fusion, lexical_weight)
         model, expected = self.identity.capture()
         self.identity.check(expected=expected)
         vectors = model.embed([query])
@@ -240,7 +242,8 @@ class TenantRAG:
             try:
                 con.execute("BEGIN")
                 self.identity.check(dim, expected=expected)
-                result = hybrid_search(self.store, tid, query, vectors[0], k=k)
+                result = hybrid_search(self.store, tid, query, vectors[0], k=k,
+                                       fusion=fusion, lexical_weight=weight)
                 con.commit()
                 return result
             except BaseException:

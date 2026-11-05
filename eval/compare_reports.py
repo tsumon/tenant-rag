@@ -54,7 +54,7 @@ def _validate_rankings(report):
                     raise ValueError("report suite metrics disagree with its queries")
 
 
-def compare_reports(baseline, candidate):
+def compare_reports(baseline, candidate, *, allow_fusion_change=False):
     """Require the same corpus, selection, implementation and retrieval setup.
 
     Package/runtime changes are reported explicitly. This compares observed
@@ -76,9 +76,20 @@ def compare_reports(baseline, candidate):
             for suite in report["suites"].values():
                 _metrics(suite["metrics"])
             _validate_rankings(report)
-        for field in ("k", "candidates_per_channel", "retrieval", "implementation_sha256"):
+        for field in ("k", "candidates_per_channel", "implementation_sha256"):
             if baseline[field] != candidate[field]:
                 raise ValueError(f"reports differ in {field}; rerun both with identical evaluation code/settings")
+        if allow_fusion_change:
+            allowed = {'fusion', 'lexical_weight', 'rrf_k'}
+            fixed = [{key: value for key, value in report['retrieval'].items() if key not in allowed}
+                     for report in (baseline, candidate)]
+            if fixed[0] != fixed[1]:
+                raise ValueError('fusion comparisons cannot change other retrieval settings')
+            if any(baseline.get(field) != candidate.get(field)
+                   for field in ('backend', 'python_version', 'sqlite_version')):
+                raise ValueError('fusion comparisons require identical backend and runtime')
+        elif baseline['retrieval'] != candidate['retrieval']:
+            raise ValueError('reports differ in retrieval; use --allow-fusion-change only for an intentional same-model fusion comparison')
         for field in ("sha256", "selected_records_sha256"):
             if baseline["dataset"][field] != candidate["dataset"][field]:
                 raise ValueError(f"reports differ in dataset {field}; corpus and selected queries must match")
@@ -92,6 +103,14 @@ def compare_reports(baseline, candidate):
             for field in ("suite", "query", "expected", "tags"):
                 if left[field] != right[field]:
                     raise ValueError("reports disagree on query text, labels, tags or suite")
+            if allow_fusion_change:
+                for mode in ('vector', 'fts'):
+                    before = left.get('candidate_sha256', {}).get(mode)
+                    after = right.get('candidate_sha256', {}).get(mode)
+                    if not isinstance(before, str) or len(before) != 64 or before != after:
+                        raise ValueError('fusion comparisons require identical full vector/FTS candidate fingerprints')
+                    if left['ranked'][mode] != right['ranked'][mode]:
+                        raise ValueError('fusion comparison control-channel rankings differ')
             delta = {mode: {metric: right["metrics"][mode][metric] - left["metrics"][mode][metric]
                             for metric in METRICS} for mode in MODES}
             if any(value for metrics in delta.values() for value in metrics.values()):
@@ -104,6 +123,8 @@ def compare_reports(baseline, candidate):
                            for field in ("python_version", "sqlite_version")
                            if baseline.get(field) != candidate.get(field)}
         return {"schema_version": 1, "k": baseline["k"], "dataset": baseline["dataset"],
+                'comparison_kind': 'fusion' if allow_fusion_change else 'model_or_repeat',
+                'retrieval_settings': {'baseline': baseline['retrieval'], 'candidate': candidate['retrieval']},
                 "baseline_backend": baseline["backend"], "candidate_backend": candidate["backend"],
                 "runtime_changes": runtime_changes, "suite_deltas": suites,
                 "changed_queries": changes, "unchanged_metric_queries": len(old) - len(changes),
@@ -117,10 +138,12 @@ def main(argv=None):
     parser.add_argument("baseline", type=Path)
     parser.add_argument("candidate", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument('--allow-fusion-change', action='store_true',
+                        help='Compare only fusion settings; require identical model/runtime and all other settings')
     args = parser.parse_args(argv)
     try:
         reports = [json.loads(path.read_text(encoding="utf-8")) for path in (args.baseline, args.candidate)]
-        result = compare_reports(*reports)
+        result = compare_reports(*reports, allow_fusion_change=args.allow_fusion_change)
         serialized = json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n"
         if args.output:
             args.output.write_text(serialized, encoding="utf-8")

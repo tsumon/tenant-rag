@@ -153,7 +153,7 @@ python eval/run_eval.py --json --output eval-report.json
 python demo/run_demo.py
 ```
 
-The [evaluation guide](eval/README.md) also includes a versioned operations challenge, checksum/provenance verification and a no-network `--dry-run` request plan. An optional **CPU local-model path** evaluates an existing Sentence Transformers safetensors snapshot without a paid API or automatic downloads. It records model file hashes and dependency versions; a report comparison command lists metric changes and per-query regressions. Real-model integration and quality remain unverified until run with actual weights.
+The [evaluation guide](eval/README.md) includes versioned synthetic corpora, checksum verification and a no-network `--dry-run` plan. An optional **CPU local-model path** evaluates an existing safetensors snapshot without a paid API or automatic downloads. A fixed multilingual model has now been run on the public development corpora; [the fusion study](docs/FUSION.md) records the results, tradeoffs and independent-evaluation protocol. These measurements do not establish production quality.
 
 The default gate checks the **pipeline regression suite** using fake lexical embeddings. A separate bilingual semantic challenge suite reports diagnostic results; synthetic fixtures are not a production quality benchmark. Reports identify the embedder and suite. Recall@k and reciprocal rank at the retrieved cutoff compare hybrid, vector and keyword channels.
 
@@ -168,6 +168,12 @@ python eval/run_eval.py --embedder openai --allow-provider-requests \
 Set EMBED_API_KEY (use a non-secret dummy value only for local endpoints that ignore authentication). This opt-in makes network requests and can incur cost; inspect the dataset and endpoint first. **No real-model quality result is claimed by this repository's offline tests.** Hybrid is not guaranteed to outperform vectors on every dataset. Choose quality thresholds after measuring representative, consented data.
 
 ## How retrieval works
+
+RRF remains the default. To test an alternative that preserves cosine margins,
+use `rag.search(key, query, fusion="score", lexical_weight=0.2)` or add the same
+fields to the HTTP search body. This opt-in adds a bounded keyword-ranking
+bonus; it is not a numeric filter or a guarantee of better retrieval. See
+[formula, validation and limits](docs/FUSION.md).
 
 ```text
 API key → tenant ID

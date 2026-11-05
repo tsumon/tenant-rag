@@ -110,11 +110,11 @@ a chunking evaluation. Numerical results may differ across dependency versions,
 hardware or CPU math implementations even with identical weights. Save the
 report and an environment lockfile for exact run reconstruction.
 
-No pretrained-model score is supplied with this change. Adapter tests use
-mocked model outputs to check configuration, validation and reporting; they are
-not model-quality or dependency-integration evidence. See the dated
-[validation record](LOCAL_EVAL_VALIDATION.md) for what actually ran and what was
-blocked. Default zero thresholds are only a smoke check, not a quality target.
+The initial adapter tests use mocked outputs and are not model-quality evidence.
+A subsequent actual fixed-snapshot run and fusion experiments are recorded in
+[the fusion study](../docs/FUSION.md). The original
+[validation record](LOCAL_EVAL_VALIDATION.md) remains as historical context.
+Default zero thresholds are only a smoke check, not a quality target.
 
 ## Compare runs and inspect regressions
 
@@ -135,6 +135,14 @@ observations on these fixtures, not a statistically controlled model claim.
 Compare pretrained models using the same runtime and review query failures,
 especially bilingual and hard-negative cases. Exit 0 means compatible reports,
 not that the candidate improved; invalid or incompatible reports exit 2.
+
+For an intentional same-model fusion experiment, use `--fusion score` with an
+optional `--lexical-weight` in 0..1, then compare with
+`--allow-fusion-change`. This requires identical backend/runtime and full
+per-query vector/FTS candidate fingerprints, while allowing only fusion settings
+to differ. Legacy RRF remains the default. See the [formula and study
+protocol](../docs/FUSION.md); do not select a weight on the dataset claimed as
+an unseen test.
 
 ## Explicit real-provider evaluation (optional)
 
