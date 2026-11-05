@@ -252,7 +252,8 @@ class IngestionTests(unittest.TestCase):
             with self.assertRaises(sqlite3.DatabaseError):
                 self.rag.ingest(self.key, "new parent", "parent")
         finally:
-            con.set_authorizer(None)
+            # Python 3.10 cannot reliably disable callbacks with None.
+            con.set_authorizer(lambda *args: sqlite3.SQLITE_OK)
         self.assertEqual(self.snapshot(), before)
         self.assert_clean()
         self.rag.ingest(self.key, "new parent", "parent")
