@@ -1,0 +1,1666 @@
+{
+  "checks": {
+    "deleted_parent_chunks_absent": true,
+    "invalid_key_rejected_before_embedding": true,
+    "other_key_query_runs": 32,
+    "other_key_results_all_in_correct_tenant": true,
+    "reopen_preserves_data_and_deletion": true,
+    "same_id_cross_tenant_delete_isolated": true
+  },
+  "embedding_work": {
+    "calls": 82,
+    "texts": 130
+  },
+  "ingestion": {
+    "aurora": {
+      "chunks": 25,
+      "parents": 5,
+      "unchanged_retry_extra_embedding_calls": 0
+    },
+    "cedar": {
+      "chunks": 25,
+      "parents": 5,
+      "unchanged_retry_extra_embedding_calls": 0
+    }
+  },
+  "network": {
+    "attempted_network_events": [],
+    "guard": "Python socket audit hook + offline model-loading flags",
+    "scope": "Inference process only; setup downloads are separate. Not an OS firewall."
+  },
+  "provenance": {
+    "fixture_sha256": {
+      "README.md": "b4bead85a82ba6dc3924a2ce0172fff21dcc540bc00c3889cf5c607d9003185d",
+      "SHA256SUMS": "18b9a9693612e556bf18b83bf96a4adfa47d7cf6006460d4f137ed9025216e7c",
+      "aurora/refunds.md": "fe1fc26b7e5ef0b3fc6005ed14cdba50dc4207254ec45a67ef07946c225f0b7e",
+      "aurora/shipping.md": "8b765db8be0d7fc2050e8e2cc06cfd26d3be9bfb038344ba0fdcb30a4fe863eb",
+      "aurora/subscription.md": "232a9ab047eedebc37ea04c4829c963003b8205f933a0642cd6bfd3258101dd5",
+      "aurora/support.md": "49c7bdb4b243ddff29a65256a3c85bf3a4cd18d0b12324276e454474097499c9",
+      "aurora/warranty.md": "702d91f81e5b982c5d56044426a7fa356993a8526426057e0f2c0f2f564785b4",
+      "cedar/refunds.md": "c8fa4a251a7f0ec80790004fc5360ca3193999800d4a9c796de912afa0ef5ec7",
+      "cedar/shipping.md": "67b8d4da9d8ea66b9447c795e7e928ed8f3cda504cd3e6d3c304fb2f3a058bed",
+      "cedar/subscription.md": "0156b0582918da53bed51663b7ce1d21a06b06921c36b7013d97a947536da033",
+      "cedar/support.md": "22279c7eeac47e2ada3ffdcf77b9dc0b3c3c5dbadd7f35f15d0506e66d39d3ab",
+      "cedar/warranty.md": "88b3c94ebbc678a0ca30ddda522c4356147fe4ead3c3dbcd613495668cbc5ea4",
+      "queries.json": "606bbe2097ad6e41e4d9724fece5de99fa7bf92bb0fd9e5079fcc7a1bb7f3fd2"
+    },
+    "implementation_sha256": {
+      "local_embedder.py": "f9795f1cf2d40247540cdb63a3aadc3d794d2659f2511dbb1f6b774ed1ee0e4d",
+      "run_trial.py": "9591217a680dbe0604b8220bf4e7a8ade351e1e62cced8358c88894c11de7b7b"
+    },
+    "model_fingerprint": {
+      "file_count": 12,
+      "sha256": "a3f7688b8991a6ea9f048524205c08de9c362f0e5d63d0ebdc9116a563601529"
+    },
+    "model_repository": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "model_settings": {
+      "batch_size": 32,
+      "device": "cpu",
+      "local_files_only": true,
+      "max_seq_length": 128,
+      "normalize_embeddings": true,
+      "prompt": "",
+      "trust_remote_code": false,
+      "weights_format": "safetensors"
+    },
+    "model_upstream_revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "python": "3.12.14",
+    "runtime": {
+      "numpy": "2.5.4",
+      "safetensors": "0.8.0",
+      "sentence-transformers": "5.6.0",
+      "tokenizers": "0.22.2",
+      "torch": "2.13.0+cpu",
+      "transformers": "5.13.0"
+    },
+    "source_commit": "5a52e0a18edcb145e66a03b0a84aeea15b0e6f4b",
+    "sqlite": "3.53.1",
+    "tenant_rag_version": "0.5.0",
+    "wheel_sha256": "4402ea42af53d4d1fd02de8a0baa0d912436e187495c8c394ffd1743bbbaf76c"
+  },
+  "queries": [
+    {
+      "category": "paraphrase",
+      "id": "q01",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 0.0,
+          "hits": [
+            {
+              "end": 547,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.032787,
+              "source": "aurora/refunds.md",
+              "start": 470,
+              "text": " the accessory refund; a missing parcel follows the shipping policy instead.\n"
+            },
+            {
+              "end": 380,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.031498,
+              "source": "aurora/shipping.md",
+              "start": 241,
+              "text": "工作日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            },
+            {
+              "end": 349,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.031258,
+              "source": "aurora/subscription.md",
+              "start": 242,
+              "text": "须在续订前至少 48 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 547,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.838266,
+              "source": "aurora/refunds.md",
+              "start": 470,
+              "text": " the accessory refund; a missing parcel follows the shipping policy instead.\n"
+            },
+            {
+              "end": 257,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "refunds",
+              "score": 0.561629,
+              "source": "aurora/refunds.md",
+              "start": 77,
+              "text": "l store. 全文为合成测试资料，不是真实商家的承诺。\n## Return window / 退货期限\nAurora accepts unused accessories within 21 calendar days of delivery. Aurora 的未使用配件可在签收后 21 个自然日内退货。The original package and "
+            },
+            {
+              "end": 380,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.551185,
+              "source": "aurora/shipping.md",
+              "start": 241,
+              "text": "工作日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "How long after my parcel arrives can I send back an untouched accessory?",
+      "relevant": [
+        {
+          "doc_id": "refunds",
+          "evidence": "Aurora accepts unused accessories within 21 calendar days of delivery."
+        }
+      ],
+      "tenant": "aurora"
+    },
+    {
+      "category": "paraphrase",
+      "id": "q02",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 0.0,
+          "hits": [
+            {
+              "end": 576,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.032266,
+              "source": "cedar/refunds.md",
+              "start": 467,
+              "text": "ping charges are not included in the accessory refund; a missing parcel follows the shipping policy instead.\n"
+            },
+            {
+              "end": 377,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.031754,
+              "source": "cedar/shipping.md",
+              "start": 240,
+              "text": "日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            },
+            {
+              "end": 346,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.031258,
+              "source": "cedar/subscription.md",
+              "start": 241,
+              "text": "续订前至少 72 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 576,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.646472,
+              "source": "cedar/refunds.md",
+              "start": 467,
+              "text": "ping charges are not included in the accessory refund; a missing parcel follows the shipping policy instead.\n"
+            },
+            {
+              "end": 377,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.549131,
+              "source": "cedar/shipping.md",
+              "start": 240,
+              "text": "日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            },
+            {
+              "end": 256,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "refunds",
+              "score": 0.546735,
+              "source": "cedar/refunds.md",
+              "start": 76,
+              "text": "l store. 全文为合成测试资料，不是真实商家的承诺。\n## Return window / 退货期限\nCedar accepts unused accessories within 35 calendar days of delivery. Cedar 的未使用配件可在签收后 35 个自然日内退货。The original package and a "
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "How long after my parcel arrives can I send back an untouched accessory?",
+      "relevant": [
+        {
+          "doc_id": "refunds",
+          "evidence": "Cedar accepts unused accessories within 35 calendar days of delivery."
+        }
+      ],
+      "tenant": "cedar"
+    },
+    {
+      "category": "numeric",
+      "id": "q03",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 530,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.032787,
+              "source": "aurora/shipping.md",
+              "start": 350,
+              "text": "aves the fictional warehouse.\n## Shipping fee / 运费\nAurora offers free standard shipping on orders of at least 60 credits. Aurora 订单达到 60 积分即可享受标准配送免运费。Smaller orders cost 6 credits"
+            },
+            {
+              "end": 350,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.031281,
+              "source": "aurora/refunds.md",
+              "start": 227,
+              "text": "日内退货。The original package and a synthetic order number are required. The return clock starts on delivery, not on purchase.\n"
+            },
+            {
+              "end": 380,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.03055,
+              "source": "aurora/shipping.md",
+              "start": 241,
+              "text": "工作日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 530,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.687475,
+              "source": "aurora/shipping.md",
+              "start": 350,
+              "text": "aves the fictional warehouse.\n## Shipping fee / 运费\nAurora offers free standard shipping on orders of at least 60 credits. Aurora 订单达到 60 积分即可享受标准配送免运费。Smaller orders cost 6 credits"
+            },
+            {
+              "end": 350,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.43013,
+              "source": "aurora/refunds.md",
+              "start": 227,
+              "text": "日内退货。The original package and a synthetic order number are required. The return clock starts on delivery, not on purchase.\n"
+            },
+            {
+              "end": 380,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.409047,
+              "source": "aurora/shipping.md",
+              "start": 241,
+              "text": "工作日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "What is the minimum basket amount for free delivery?",
+      "relevant": [
+        {
+          "doc_id": "shipping",
+          "evidence": "Aurora offers free standard shipping on orders of at least 60 credits."
+        }
+      ],
+      "tenant": "aurora"
+    },
+    {
+      "category": "numeric",
+      "id": "q04",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 527,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.032787,
+              "source": "cedar/shipping.md",
+              "start": 347,
+              "text": "aves the fictional warehouse.\n## Shipping fee / 运费\nCedar offers free standard shipping on orders of at least 90 credits. Cedar 订单达到 90 积分即可享受标准配送免运费。Smaller orders cost 9 credits. "
+            },
+            {
+              "end": 347,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.031281,
+              "source": "cedar/refunds.md",
+              "start": 226,
+              "text": "退货。The original package and a synthetic order number are required. The return clock starts on delivery, not on purchase.\n"
+            },
+            {
+              "end": 377,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.030798,
+              "source": "cedar/shipping.md",
+              "start": 240,
+              "text": "日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 527,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.652199,
+              "source": "cedar/shipping.md",
+              "start": 347,
+              "text": "aves the fictional warehouse.\n## Shipping fee / 运费\nCedar offers free standard shipping on orders of at least 90 credits. Cedar 订单达到 90 积分即可享受标准配送免运费。Smaller orders cost 9 credits. "
+            },
+            {
+              "end": 347,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.423421,
+              "source": "cedar/refunds.md",
+              "start": 226,
+              "text": "退货。The original package and a synthetic order number are required. The return clock starts on delivery, not on purchase.\n"
+            },
+            {
+              "end": 377,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.404989,
+              "source": "cedar/shipping.md",
+              "start": 240,
+              "text": "日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "What is the minimum basket amount for free delivery?",
+      "relevant": [
+        {
+          "doc_id": "shipping",
+          "evidence": "Cedar offers free standard shipping on orders of at least 90 credits."
+        }
+      ],
+      "tenant": "cedar"
+    },
+    {
+      "category": "cross_language",
+      "id": "q05",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 266,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.016393,
+              "source": "aurora/warranty.md",
+              "start": 86,
+              "text": "p. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n## Coverage / 保修范围\nAurora desk lamps have an 18-month warranty from delivery. Aurora 台灯自签收起享有 18 个月保修。Coverage applies to manufacturing defects in the"
+            },
+            {
+              "end": 349,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "subscription",
+              "score": 0.016129,
+              "source": "aurora/subscription.md",
+              "start": 242,
+              "text": "须在续订前至少 48 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            },
+            {
+              "end": 353,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.015873,
+              "source": "aurora/warranty.md",
+              "start": 236,
+              "text": "o manufacturing defects in the lamp base and switch. Keep the fictional order receipt when requesting an inspection.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 266,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.610605,
+              "source": "aurora/warranty.md",
+              "start": 86,
+              "text": "p. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n## Coverage / 保修范围\nAurora desk lamps have an 18-month warranty from delivery. Aurora 台灯自签收起享有 18 个月保修。Coverage applies to manufacturing defects in the"
+            },
+            {
+              "end": 349,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "subscription",
+              "score": 0.447189,
+              "source": "aurora/subscription.md",
+              "start": 242,
+              "text": "须在续订前至少 48 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            },
+            {
+              "end": 353,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.434518,
+              "source": "aurora/warranty.md",
+              "start": 236,
+              "text": "o manufacturing defects in the lamp base and switch. Keep the fictional order receipt when requesting an inspection.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "台灯从收到货开始能保修几个月？",
+      "relevant": [
+        {
+          "doc_id": "warranty",
+          "evidence": "Aurora desk lamps have an 18-month warranty from delivery."
+        }
+      ],
+      "tenant": "aurora"
+    },
+    {
+      "category": "cross_language",
+      "id": "q06",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 265,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.016393,
+              "source": "cedar/warranty.md",
+              "start": 85,
+              "text": "p. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n## Coverage / 保修范围\nCedar desk lamps have a 30-month warranty from delivery. Cedar 台灯自签收起享有 30 个月保修。Coverage applies to manufacturing defects in the la"
+            },
+            {
+              "end": 346,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "subscription",
+              "score": 0.016129,
+              "source": "cedar/subscription.md",
+              "start": 241,
+              "text": "续订前至少 72 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            },
+            {
+              "end": 349,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.015873,
+              "source": "cedar/warranty.md",
+              "start": 235,
+              "text": "anufacturing defects in the lamp base and switch. Keep the fictional order receipt when requesting an inspection.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 265,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.629235,
+              "source": "cedar/warranty.md",
+              "start": 85,
+              "text": "p. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n## Coverage / 保修范围\nCedar desk lamps have a 30-month warranty from delivery. Cedar 台灯自签收起享有 30 个月保修。Coverage applies to manufacturing defects in the la"
+            },
+            {
+              "end": 346,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "subscription",
+              "score": 0.448992,
+              "source": "cedar/subscription.md",
+              "start": 241,
+              "text": "续订前至少 72 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            },
+            {
+              "end": 349,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.417454,
+              "source": "cedar/warranty.md",
+              "start": 235,
+              "text": "anufacturing defects in the lamp base and switch. Keep the fictional order receipt when requesting an inspection.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "台灯从收到货开始能保修几个月？",
+      "relevant": [
+        {
+          "doc_id": "warranty",
+          "evidence": "Cedar desk lamps have a 30-month warranty from delivery."
+        }
+      ],
+      "tenant": "cedar"
+    },
+    {
+      "category": "negation",
+      "id": "q07",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 503,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.032787,
+              "source": "aurora/warranty.md",
+              "start": 323,
+              "text": "hen requesting an inspection.\n## Exclusions / 不保修项目\nAurora warranty excludes accidental water damage. Aurora 保修不包括意外进水损坏。Normal cosmetic scratches are also excluded. A replacement "
+            },
+            {
+              "end": 353,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.032258,
+              "source": "aurora/warranty.md",
+              "start": 236,
+              "text": "o manufacturing defects in the lamp base and switch. Keep the fictional order receipt when requesting an inspection.\n"
+            },
+            {
+              "end": 266,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.031746,
+              "source": "aurora/warranty.md",
+              "start": 86,
+              "text": "p. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n## Coverage / 保修范围\nAurora desk lamps have an 18-month warranty from delivery. Aurora 台灯自签收起享有 18 个月保修。Coverage applies to manufacturing defects in the"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 503,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.674368,
+              "source": "aurora/warranty.md",
+              "start": 323,
+              "text": "hen requesting an inspection.\n## Exclusions / 不保修项目\nAurora warranty excludes accidental water damage. Aurora 保修不包括意外进水损坏。Normal cosmetic scratches are also excluded. A replacement "
+            },
+            {
+              "end": 353,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.566486,
+              "source": "aurora/warranty.md",
+              "start": 236,
+              "text": "o manufacturing defects in the lamp base and switch. Keep the fictional order receipt when requesting an inspection.\n"
+            },
+            {
+              "end": 266,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.39248,
+              "source": "aurora/warranty.md",
+              "start": 86,
+              "text": "p. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n## Coverage / 保修范围\nAurora desk lamps have an 18-month warranty from delivery. Aurora 台灯自签收起享有 18 个月保修。Coverage applies to manufacturing defects in the"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "If I accidentally spill water on my lamp, is repair covered?",
+      "relevant": [
+        {
+          "doc_id": "warranty",
+          "evidence": "Aurora warranty excludes accidental water damage."
+        }
+      ],
+      "tenant": "aurora"
+    },
+    {
+      "category": "negation",
+      "id": "q08",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 499,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.032787,
+              "source": "cedar/warranty.md",
+              "start": 319,
+              "text": "hen requesting an inspection.\n## Exclusions / 不保修项目\nCedar warranty includes one accidental water-damage repair. Cedar 保修包括一次意外进水维修。Normal cosmetic scratches are excluded. A replace"
+            },
+            {
+              "end": 349,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.032258,
+              "source": "cedar/warranty.md",
+              "start": 235,
+              "text": "anufacturing defects in the lamp base and switch. Keep the fictional order receipt when requesting an inspection.\n"
+            },
+            {
+              "end": 265,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.031746,
+              "source": "cedar/warranty.md",
+              "start": 85,
+              "text": "p. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n## Coverage / 保修范围\nCedar desk lamps have a 30-month warranty from delivery. Cedar 台灯自签收起享有 30 个月保修。Coverage applies to manufacturing defects in the la"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 499,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.677501,
+              "source": "cedar/warranty.md",
+              "start": 319,
+              "text": "hen requesting an inspection.\n## Exclusions / 不保修项目\nCedar warranty includes one accidental water-damage repair. Cedar 保修包括一次意外进水维修。Normal cosmetic scratches are excluded. A replace"
+            },
+            {
+              "end": 349,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.565578,
+              "source": "cedar/warranty.md",
+              "start": 235,
+              "text": "anufacturing defects in the lamp base and switch. Keep the fictional order receipt when requesting an inspection.\n"
+            },
+            {
+              "end": 265,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.411681,
+              "source": "cedar/warranty.md",
+              "start": 85,
+              "text": "p. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n## Coverage / 保修范围\nCedar desk lamps have a 30-month warranty from delivery. Cedar 台灯自签收起享有 30 个月保修。Coverage applies to manufacturing defects in the la"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "If I accidentally spill water on my lamp, is repair covered?",
+      "relevant": [
+        {
+          "doc_id": "warranty",
+          "evidence": "Cedar warranty includes one accidental water-damage repair."
+        }
+      ],
+      "tenant": "cedar"
+    },
+    {
+      "category": "cross_language",
+      "id": "q09",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 272,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.032522,
+              "source": "aurora/subscription.md",
+              "start": 92,
+              "text": "fer. 这是一份虚构会员说明，不涉及真实收费或真实账户。\n## Cancellation / 取消续订\nAurora members must cancel at least 48 hours before renewal to prevent the next charge. Aurora 会员须在续订前至少 48 小时取消，才能避免下一次扣费。Canc"
+            },
+            {
+              "end": 349,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.032522,
+              "source": "aurora/subscription.md",
+              "start": 242,
+              "text": "须在续订前至少 48 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            },
+            {
+              "end": 573,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.015873,
+              "source": "aurora/warranty.md",
+              "start": 473,
+              "text": " also excluded. A replacement keeps the original warranty end date rather than starting a new term.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 349,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.828621,
+              "source": "aurora/subscription.md",
+              "start": 242,
+              "text": "须在续订前至少 48 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            },
+            {
+              "end": 272,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.768937,
+              "source": "aurora/subscription.md",
+              "start": 92,
+              "text": "fer. 这是一份虚构会员说明，不涉及真实收费或真实账户。\n## Cancellation / 取消续订\nAurora members must cancel at least 48 hours before renewal to prevent the next charge. Aurora 会员须在续订前至少 48 小时取消，才能避免下一次扣费。Canc"
+            },
+            {
+              "end": 573,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "warranty",
+              "score": 0.507705,
+              "source": "aurora/warranty.md",
+              "start": 473,
+              "text": " also excluded. A replacement keeps the original warranty end date rather than starting a new term.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "续订前至少要提前多少小时取消才能避免扣费？",
+      "relevant": [
+        {
+          "doc_id": "subscription",
+          "evidence": "Aurora members must cancel at least 48 hours before renewal to prevent the next charge."
+        }
+      ],
+      "tenant": "aurora"
+    },
+    {
+      "category": "cross_language",
+      "id": "q10",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 271,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.032522,
+              "source": "cedar/subscription.md",
+              "start": 91,
+              "text": "fer. 这是一份虚构会员说明，不涉及真实收费或真实账户。\n## Cancellation / 取消续订\nCedar members must cancel at least 72 hours before renewal to prevent the next charge. Cedar 会员须在续订前至少 72 小时取消，才能避免下一次扣费。Cancel"
+            },
+            {
+              "end": 346,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.032522,
+              "source": "cedar/subscription.md",
+              "start": 241,
+              "text": "续订前至少 72 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            },
+            {
+              "end": 354,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "support",
+              "score": 0.015873,
+              "source": "cedar/support.md",
+              "start": 245,
+              "text": "essages outside those hours join the next working day's queue. The store does not promise immediate replies.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 346,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.806314,
+              "source": "cedar/subscription.md",
+              "start": 241,
+              "text": "续订前至少 72 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            },
+            {
+              "end": 271,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.741997,
+              "source": "cedar/subscription.md",
+              "start": 91,
+              "text": "fer. 这是一份虚构会员说明，不涉及真实收费或真实账户。\n## Cancellation / 取消续订\nCedar members must cancel at least 72 hours before renewal to prevent the next charge. Cedar 会员须在续订前至少 72 小时取消，才能避免下一次扣费。Cancel"
+            },
+            {
+              "end": 354,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "support",
+              "score": 0.534206,
+              "source": "cedar/support.md",
+              "start": 245,
+              "text": "essages outside those hours join the next working day's queue. The store does not promise immediate replies.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "续订前至少要提前多少小时取消才能避免扣费？",
+      "relevant": [
+        {
+          "doc_id": "subscription",
+          "evidence": "Cedar members must cancel at least 72 hours before renewal to prevent the next charge."
+        }
+      ],
+      "tenant": "cedar"
+    },
+    {
+      "category": "paraphrase",
+      "id": "q11",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 276,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "support",
+              "score": 0.032522,
+              "source": "aurora/support.md",
+              "start": 96,
+              "text": "下客服安排均为虚构测试文本，没有真实的客服团队或联络方式。\n## Hours / 服务时间\nAurora live chat operates Monday to Friday, 09:00–17:00 UTC. Aurora 在线客服周一至周五提供服务，时间为 UTC 09:00–17:00。Messages outside those hours joi"
+            },
+            {
+              "end": 272,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.031319,
+              "source": "aurora/subscription.md",
+              "start": 92,
+              "text": "fer. 这是一份虚构会员说明，不涉及真实收费或真实账户。\n## Cancellation / 取消续订\nAurora members must cancel at least 48 hours before renewal to prevent the next charge. Aurora 会员须在续订前至少 48 小时取消，才能避免下一次扣费。Canc"
+            },
+            {
+              "end": 349,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.030579,
+              "source": "aurora/subscription.md",
+              "start": 242,
+              "text": "须在续订前至少 48 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 276,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "support",
+              "score": 0.490559,
+              "source": "aurora/support.md",
+              "start": 96,
+              "text": "下客服安排均为虚构测试文本，没有真实的客服团队或联络方式。\n## Hours / 服务时间\nAurora live chat operates Monday to Friday, 09:00–17:00 UTC. Aurora 在线客服周一至周五提供服务，时间为 UTC 09:00–17:00。Messages outside those hours joi"
+            },
+            {
+              "end": 272,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.286517,
+              "source": "aurora/subscription.md",
+              "start": 92,
+              "text": "fer. 这是一份虚构会员说明，不涉及真实收费或真实账户。\n## Cancellation / 取消续订\nAurora members must cancel at least 48 hours before renewal to prevent the next charge. Aurora 会员须在续订前至少 48 小时取消，才能避免下一次扣费。Canc"
+            },
+            {
+              "end": 354,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "support",
+              "score": 0.283537,
+              "source": "aurora/support.md",
+              "start": 246,
+              "text": "ssages outside those hours join the next working day's queue. The store does not promise immediate replies.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "When can I reach a human through chat?",
+      "relevant": [
+        {
+          "doc_id": "support",
+          "evidence": "Aurora live chat operates Monday to Friday, 09:00–17:00 UTC."
+        }
+      ],
+      "tenant": "aurora"
+    },
+    {
+      "category": "paraphrase",
+      "id": "q12",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 275,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "support",
+              "score": 0.032522,
+              "source": "cedar/support.md",
+              "start": 95,
+              "text": "下客服安排均为虚构测试文本，没有真实的客服团队或联络方式。\n## Hours / 服务时间\nCedar live chat operates Tuesday to Saturday, 12:00–20:00 UTC. Cedar 在线客服周二至周六提供服务，时间为 UTC 12:00–20:00。Messages outside those hours jo"
+            },
+            {
+              "end": 271,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.031319,
+              "source": "cedar/subscription.md",
+              "start": 91,
+              "text": "fer. 这是一份虚构会员说明，不涉及真实收费或真实账户。\n## Cancellation / 取消续订\nCedar members must cancel at least 72 hours before renewal to prevent the next charge. Cedar 会员须在续订前至少 72 小时取消，才能避免下一次扣费。Cancel"
+            },
+            {
+              "end": 377,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "shipping",
+              "score": 0.03009,
+              "source": "cedar/shipping.md",
+              "start": 240,
+              "text": "日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 275,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "support",
+              "score": 0.533048,
+              "source": "cedar/support.md",
+              "start": 95,
+              "text": "下客服安排均为虚构测试文本，没有真实的客服团队或联络方式。\n## Hours / 服务时间\nCedar live chat operates Tuesday to Saturday, 12:00–20:00 UTC. Cedar 在线客服周二至周六提供服务，时间为 UTC 12:00–20:00。Messages outside those hours jo"
+            },
+            {
+              "end": 271,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.313911,
+              "source": "cedar/subscription.md",
+              "start": 91,
+              "text": "fer. 这是一份虚构会员说明，不涉及真实收费或真实账户。\n## Cancellation / 取消续订\nCedar members must cancel at least 72 hours before renewal to prevent the next charge. Cedar 会员须在续订前至少 72 小时取消，才能避免下一次扣费。Cancel"
+            },
+            {
+              "end": 354,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "support",
+              "score": 0.2659,
+              "source": "cedar/support.md",
+              "start": 245,
+              "text": "essages outside those hours join the next working day's queue. The store does not promise immediate replies.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "When can I reach a human through chat?",
+      "relevant": [
+        {
+          "doc_id": "support",
+          "evidence": "Cedar live chat operates Tuesday to Saturday, 12:00–20:00 UTC."
+        }
+      ],
+      "tenant": "cedar"
+    },
+    {
+      "category": "negation",
+      "id": "q13",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 500,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.032787,
+              "source": "aurora/refunds.md",
+              "start": 320,
+              "text": "on delivery, not on purchase.\n## Exceptions / 例外\nAurora does not refund downloaded digital patterns. 已下载的数字图样不能退款。Shipping charges are not included in the accessory refund; a missi"
+            },
+            {
+              "end": 547,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.031754,
+              "source": "aurora/refunds.md",
+              "start": 470,
+              "text": " the accessory refund; a missing parcel follows the shipping policy instead.\n"
+            },
+            {
+              "end": 107,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.031025,
+              "source": "aurora/refunds.md",
+              "start": 0,
+              "text": "# Aurora refunds / 退款规则 [SYNTHETIC]\nThis entire document describes a fictional store. 全文为合成测试资料，不是真实商家的承诺。\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 500,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.757707,
+              "source": "aurora/refunds.md",
+              "start": 320,
+              "text": "on delivery, not on purchase.\n## Exceptions / 例外\nAurora does not refund downloaded digital patterns. 已下载的数字图样不能退款。Shipping charges are not included in the accessory refund; a missi"
+            },
+            {
+              "end": 547,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.511656,
+              "source": "aurora/refunds.md",
+              "start": 470,
+              "text": " the accessory refund; a missing parcel follows the shipping policy instead.\n"
+            },
+            {
+              "end": 107,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.453048,
+              "source": "aurora/refunds.md",
+              "start": 0,
+              "text": "# Aurora refunds / 退款规则 [SYNTHETIC]\nThis entire document describes a fictional store. 全文为合成测试资料，不是真实商家的承诺。\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "Can I get a refund for a digital pattern I already downloaded?",
+      "relevant": [
+        {
+          "doc_id": "refunds",
+          "evidence": "Aurora does not refund downloaded digital patterns."
+        }
+      ],
+      "tenant": "aurora"
+    },
+    {
+      "category": "negation",
+      "id": "q14",
+      "modes": {
+        "rrf": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 497,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.032787,
+              "source": "cedar/refunds.md",
+              "start": 317,
+              "text": "on delivery, not on purchase.\n## Exceptions / 例外\nCedar refunds downloaded digital patterns only if the file is corrupted. Cedar 仅在文件损坏时退款已下载的数字图样。Shipping charges are not included "
+            },
+            {
+              "end": 106,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.031514,
+              "source": "cedar/refunds.md",
+              "start": 0,
+              "text": "# Cedar refunds / 退款规则 [SYNTHETIC]\nThis entire document describes a fictional store. 全文为合成测试资料，不是真实商家的承诺。\n"
+            },
+            {
+              "end": 346,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "subscription",
+              "score": 0.030798,
+              "source": "cedar/subscription.md",
+              "start": 241,
+              "text": "续订前至少 72 小时取消，才能避免下一次扣费。Cancellation ends renewal only; current paid access remains until the term ends.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        },
+        "score": {
+          "exact_evidence_recall_at_3_chunks": 1.0,
+          "hits": [
+            {
+              "end": 497,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.804213,
+              "source": "cedar/refunds.md",
+              "start": 317,
+              "text": "on delivery, not on purchase.\n## Exceptions / 例外\nCedar refunds downloaded digital patterns only if the file is corrupted. Cedar 仅在文件损坏时退款已下载的数字图样。Shipping charges are not included "
+            },
+            {
+              "end": 106,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.463777,
+              "source": "cedar/refunds.md",
+              "start": 0,
+              "text": "# Cedar refunds / 退款规则 [SYNTHETIC]\nThis entire document describes a fictional store. 全文为合成测试资料，不是真实商家的承诺。\n"
+            },
+            {
+              "end": 347,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "refunds",
+              "score": 0.377033,
+              "source": "cedar/refunds.md",
+              "start": 226,
+              "text": "退货。The original package and a synthetic order number are required. The return clock starts on delivery, not on purchase.\n"
+            }
+          ],
+          "parent_recall_at_3_chunks": 1.0,
+          "parent_reciprocal_rank_at_3_chunks": 1.0
+        }
+      },
+      "query": "Can I get a refund for a digital pattern I already downloaded?",
+      "relevant": [
+        {
+          "doc_id": "refunds",
+          "evidence": "Cedar refunds downloaded digital patterns only if the file is corrupted."
+        }
+      ],
+      "tenant": "cedar"
+    },
+    {
+      "category": "out_of_scope",
+      "id": "q15",
+      "modes": {
+        "rrf": {
+          "hits": [
+            {
+              "end": 350,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.032018,
+              "source": "aurora/refunds.md",
+              "start": 227,
+              "text": "日内退货。The original package and a synthetic order number are required. The return clock starts on delivery, not on purchase.\n"
+            },
+            {
+              "end": 116,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.031054,
+              "source": "aurora/warranty.md",
+              "start": 0,
+              "text": "# Aurora warranty / 保修 [SYNTHETIC]\nSynthetic knowledge-base entry for an imaginary shop. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n"
+            },
+            {
+              "end": 547,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.03101,
+              "source": "aurora/refunds.md",
+              "start": 470,
+              "text": " the accessory refund; a missing parcel follows the shipping policy instead.\n"
+            }
+          ],
+          "out_of_scope_returned_chunks": 3
+        },
+        "score": {
+          "hits": [
+            {
+              "end": 350,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "refunds",
+              "score": 0.221921,
+              "source": "aurora/refunds.md",
+              "start": 227,
+              "text": "日内退货。The original package and a synthetic order number are required. The return clock starts on delivery, not on purchase.\n"
+            },
+            {
+              "end": 559,
+              "matched": [
+                "fts"
+              ],
+              "parent_id": "support",
+              "score": 0.2,
+              "source": "aurora/support.md",
+              "start": 474,
+              "text": " same fictional ticket to add information; duplicate tickets do not speed up review.\n"
+            },
+            {
+              "end": 116,
+              "matched": [
+                "vector",
+                "fts"
+              ],
+              "parent_id": "warranty",
+              "score": 0.182215,
+              "source": "aurora/warranty.md",
+              "start": 0,
+              "text": "# Aurora warranty / 保修 [SYNTHETIC]\nSynthetic knowledge-base entry for an imaginary shop. 本文完全为合成资料，不描述真实产品或实际消费者权益。\n"
+            }
+          ],
+          "out_of_scope_returned_chunks": 3
+        }
+      },
+      "query": "What is the ingredient list for your strawberry cake?",
+      "relevant": [],
+      "tenant": "aurora"
+    },
+    {
+      "category": "out_of_scope",
+      "id": "q16",
+      "modes": {
+        "rrf": {
+          "hits": [
+            {
+              "end": 576,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "refunds",
+              "score": 0.016393,
+              "source": "cedar/refunds.md",
+              "start": 467,
+              "text": "ping charges are not included in the accessory refund; a missing parcel follows the shipping policy instead.\n"
+            },
+            {
+              "end": 347,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "refunds",
+              "score": 0.016129,
+              "source": "cedar/refunds.md",
+              "start": 226,
+              "text": "退货。The original package and a synthetic order number are required. The return clock starts on delivery, not on purchase.\n"
+            },
+            {
+              "end": 377,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "shipping",
+              "score": 0.015873,
+              "source": "cedar/shipping.md",
+              "start": 240,
+              "text": "日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            }
+          ],
+          "out_of_scope_returned_chunks": 3
+        },
+        "score": {
+          "hits": [
+            {
+              "end": 576,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "refunds",
+              "score": 0.155429,
+              "source": "cedar/refunds.md",
+              "start": 467,
+              "text": "ping charges are not included in the accessory refund; a missing parcel follows the shipping policy instead.\n"
+            },
+            {
+              "end": 347,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "refunds",
+              "score": 0.127504,
+              "source": "cedar/refunds.md",
+              "start": 226,
+              "text": "退货。The original package and a synthetic order number are required. The return clock starts on delivery, not on purchase.\n"
+            },
+            {
+              "end": 377,
+              "matched": [
+                "vector"
+              ],
+              "parent_id": "shipping",
+              "score": 0.124914,
+              "source": "cedar/shipping.md",
+              "start": 240,
+              "text": "日。Preparation time is separate; this range is not a delivery guarantee. Tracking appears when the parcel leaves the fictional warehouse.\n"
+            }
+          ],
+          "out_of_scope_returned_chunks": 3
+        }
+      },
+      "query": "你们的草莓蛋糕包含哪些原料？",
+      "relevant": [],
+      "tenant": "cedar"
+    }
+  ],
+  "summary": {
+    "rrf": {
+      "answerable_queries": 14,
+      "exact_evidence_recall_at_3_chunks": 0.8571428571428571,
+      "out_of_scope_queries": 2,
+      "out_of_scope_queries_returning_any_hit": 2,
+      "parent_recall_at_3_chunks": 1.0,
+      "parent_reciprocal_rank_at_3_chunks": 1.0
+    },
+    "score": {
+      "answerable_queries": 14,
+      "exact_evidence_recall_at_3_chunks": 1.0,
+      "out_of_scope_queries": 2,
+      "out_of_scope_queries_returning_any_hit": 2,
+      "parent_recall_at_3_chunks": 1.0,
+      "parent_reciprocal_rank_at_3_chunks": 1.0
+    }
+  },
+  "token_audit": {
+    "chunk_count": 50,
+    "chunk_options": {
+      "max_chars": 180,
+      "overlap": 30
+    },
+    "max_chunk_tokens": 72,
+    "max_query_tokens": 20,
+    "model_limit": 128,
+    "truncated_chunks": 0
+  }
+}

@@ -32,9 +32,20 @@ This is a **retrieval component**, not a complete knowledge-base product or host
 **v0.5.0** adds opt-in experimental score fusion and reproducible local evaluation.
 RRF remains the default. See [upgrade notes](docs/V0.5.md).
 
-## Install v0.5.0
+## Real local-model trial
 
-Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.5.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
+[Run the complete bilingual two-tenant example](examples/local_trial/README.md):
+install the official v0.5.0 wheel, download a verified immutable multilingual
+embedding model, import synthetic Markdown, and inspect exact source excerpts.
+The example has been repeated in a clean CPU environment. It includes isolation
+checks and the failures: default RRF returns the complete labeled answer evidence
+for 12 of 14 answerable questions, and both out-of-scope questions still return
+hits. This is a retrieval demonstration, not an LLM answer generator or an
+independent quality benchmark. v0.5.1 adds the example; core behavior is unchanged.
+
+## Install v0.5.1
+
+Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.1), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.5.1-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
 
 ## Install from source
 

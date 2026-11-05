@@ -1,0 +1,9 @@
+.venv/
+model/
+wheel/
+*.db
+*.db-*
+my-run*.json
+trial-report*.json
+__pycache__/
+*.pyc

@@ -1,5 +1,30 @@
 # Release checklist
 
+## Version 0.5.1 publication
+
+The maintainer authorized this patch's bilingual local trial, CI, merge and GitHub
+Release. The new `release-0.5.1.yml` uses the one-time publication pattern below;
+historical workflows must remain unchanged. Core runtime code is unchanged.
+
+Before packaging, run `python examples/local_trial/verify_evidence.py` as well as
+`python scripts/verify_evidence.py`. The trial pins the official 0.5.0 wheel for
+reproducibility; independently verify installed 0.5.1 distributions. No model
+weights are downloaded in the core/release matrix. Dedicated trial CI covers the
+optional model stack. Inspect the source archive for the example's scripts,
+bilingual documentation, synthetic data and evidence, and for absence of weights,
+wheels, virtual environments and databases.
+
+The release has the same six-asset contract as 0.5.0. To verify downloaded 0.5.1
+assets: `python scripts/verify_release_download.py DOWNLOAD_DIR FULL_COMMIT_SHA 0.5.1`.
+Omitting the version retains the historical 0.5.0 verification contract. This
+checks package metadata without extracting or executing archive contents. Install
+and run smoke tests in a separate step without release credentials. Check the
+same draft identity, exact main SHA, tag and every asset again before and after
+publication. Never overwrite an existing or uncertain draft/tag/release.
+
+See [0.5.1 release notes](RELEASE_0.5.1.md). This authorization does not extend to
+later releases, PyPI or deployment.
+
 ## Version 0.5.0 publication
 
 The maintainer explicitly authorized the 0.5.0 merge and GitHub Release. The

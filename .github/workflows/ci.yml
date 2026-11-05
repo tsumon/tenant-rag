@@ -3,6 +3,41 @@ on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
 jobs:
+  real-model-trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install CPU model dependencies
+        run: |
+          python -m pip install 'torch==2.13.0' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r examples/local_trial/requirements-local.txt
+      - name: Download and verify official immutable trial inputs
+        run: |
+          python examples/local_trial/scripts/download_assets.py --model-dir "$RUNNER_TEMP/trial-model"
+          python -m pip install --no-deps examples/local_trial/wheel/tenant_rag-0.5.0-py3-none-any.whl
+      - name: Verify retained evidence and example mechanics
+        working-directory: examples/local_trial
+        run: |
+          unset PYTHONPATH
+          python verify_evidence.py
+          python -m unittest discover -s tests -v
+      - name: Run actual offline local-model scenario
+        working-directory: examples/local_trial
+        run: |
+          unset PYTHONPATH
+          python run_trial.py --model-dir "$RUNNER_TEMP/trial-model" --output "$RUNNER_TEMP/trial-report.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: real-model-trial-report
+          path: |
+            ${{ runner.temp }}/trial-report.json
+            ${{ runner.temp }}/trial-report.timing.json
   test:
     runs-on: ubuntu-latest
     strategy:

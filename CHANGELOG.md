@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.1 (2026-11-05)
+
+- Add a bilingual, reproducible local real-model trial with synthetic data,
+  checked-in evidence and offline evidence verification.
+- Pin the trial to the official 0.5.0 wheel for historical reproducibility;
+  independently smoke-test the 0.5.1 wheel and source distribution.
+- Package trial source, documentation and evidence without weights, wheels,
+  environments or databases. Add dedicated real-model CI and release gates.
+- No core runtime, API or database schema changes. Retrieval still returns
+  ranked fragments for unanswerable questions; this is not answer generation.
+
 ## 0.5.0 (2026-11-05)
 
 - Add explicitly selected cosine-score/keyword-rank fusion in SDK, HTTP and
