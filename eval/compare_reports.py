@@ -1,0 +1,224 @@
+"""Compare compatible evaluation reports without running an embedding model."""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import re
+from pathlib import Path
+import sys
+
+MODES = ("hybrid", "vector", "fts")
+METRICS = ("recall_at_k", "mrr_at_k")
+IMPLEMENTATION_FILES = frozenset({
+    "eval/run_eval.py", "eval/local_embedder.py", "tenantrag/search.py",
+    "tenantrag/embed.py", "tenantrag/store.py", "tenantrag/service.py",
+    "tenantrag/identity.py", "tenantrag/chunking.py",
+})
+
+
+def _sha256(value):
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+
+
+def _metadata(report):
+    fingerprints = report["implementation_sha256"]
+    if (not isinstance(fingerprints, dict) or set(fingerprints) != IMPLEMENTATION_FILES
+            or not all(_sha256(value) for value in fingerprints.values())):
+        raise ValueError("report requires complete valid implementation fingerprints")
+    for key in ("python_version", "sqlite_version"):
+        if not isinstance(report.get(key), str) or not report[key].strip():
+            raise ValueError("report requires non-empty Python and SQLite runtime versions")
+    if type(report["candidates_per_channel"]) is not int or report["candidates_per_channel"] < 1:
+        raise ValueError("report requires a positive candidate limit")
+    backend = report["backend"]
+    if (not isinstance(backend, dict) or backend.get("name") not in ("fake", "openai", "local")
+            or any(not isinstance(backend.get(key), str) or not backend[key].strip()
+                   for key in ("model", "revision"))
+            or type(backend.get("dimensions")) is not int or backend["dimensions"] < 1
+            or "endpoint_sha256" not in backend
+            or (backend["endpoint_sha256"] is not None and not _sha256(backend["endpoint_sha256"]))):
+        raise ValueError("report requires complete backend identity metadata")
+    if backend["name"] == "openai" and not _sha256(backend["endpoint_sha256"]):
+        raise ValueError("provider report requires an endpoint fingerprint")
+    if backend["name"] == "local":
+        files, versions, settings = backend["model_files"], backend["runtime_versions"], backend["settings"]
+        packages = {'sentence-transformers', 'transformers', 'torch', 'tokenizers', 'safetensors', 'numpy'}
+        setting_keys = {'device', 'normalize_embeddings', 'batch_size', 'prompt', 'max_seq_length',
+                        'local_files_only', 'trust_remote_code', 'weights_format'}
+        if (not isinstance(files, dict) or not _sha256(files.get("sha256"))
+                or type(files.get("file_count")) is not int or files["file_count"] < 1
+                or backend["revision"] != files["sha256"]
+                or not isinstance(versions, dict) or not packages <= versions.keys()
+                or any(not isinstance(value, str) or not value.strip() for value in versions.values())
+                or not isinstance(settings, dict) or not setting_keys <= settings.keys()
+                or not isinstance(settings['device'], str) or not settings['device'].strip()
+                or not isinstance(settings['prompt'], str)
+                or not isinstance(settings['weights_format'], str) or not settings['weights_format'].strip()
+                or any(type(settings[key]) is not bool for key in ('normalize_embeddings', 'local_files_only', 'trust_remote_code'))
+                or any(type(settings[key]) is not int or settings[key] < 1 for key in ('batch_size', 'max_seq_length'))):
+            raise ValueError("local report requires snapshot, runtime and model settings")
+    retrieval = report["retrieval"]
+    if (not isinstance(retrieval, dict)
+            or not {"fusion", "lexical_weight", "rrf_k", "positive_cosine_only", "chunking"} <= retrieval.keys()
+            or type(retrieval["positive_cosine_only"]) is not bool or type(retrieval["chunking"]) is not bool):
+        raise ValueError("report requires complete retrieval settings")
+    fusion, weight, rrf_k = retrieval['fusion'], retrieval['lexical_weight'], retrieval['rrf_k']
+    if fusion == 'rrf':
+        if weight is not None or type(rrf_k) is not int or rrf_k < 1:
+            raise ValueError("invalid RRF retrieval settings")
+    elif fusion == 'score':
+        if rrf_k is not None or type(weight) not in (int, float) or not 0 <= weight <= 1 or not math.isfinite(weight):
+            raise ValueError("invalid score retrieval settings")
+    else:
+        raise ValueError("unsupported report fusion mode")
+
+
+def _metrics(value):
+    for mode in MODES:
+        for name in METRICS:
+            score = value[mode][name]
+            if type(score) not in (int, float) or not 0 <= score <= 1 or not math.isfinite(score):
+                raise ValueError("report metrics must be finite numbers between zero and one")
+
+
+def _validate_rankings(report):
+    """Reject corrupted metrics instead of presenting misleading deltas."""
+    if type(report['k']) is not int or report['k'] < 1:
+        raise ValueError("report k must be a positive integer")
+    for query in report['queries']:
+        expected = query['expected']
+        if (not isinstance(expected, list) or not expected
+                or any(not isinstance(doc_id, str) or not doc_id for doc_id in expected)
+                or len(set(expected)) != len(expected)):
+            raise ValueError("report has invalid relevance labels")
+        for mode in MODES:
+            ranked = query['ranked'][mode]
+            if (not isinstance(ranked, list) or len(ranked) > report['k']
+                    or any(not isinstance(doc_id, str) or not doc_id for doc_id in ranked)
+                    or len(set(ranked)) != len(ranked)):
+                raise ValueError("report has invalid rankings")
+            recall = len(set(expected) & set(ranked)) / len(expected)
+            mrr = next((1 / index for index, doc_id in enumerate(ranked, 1)
+                        if doc_id in expected), 0)
+            for name, actual in (('recall_at_k', recall), ('mrr_at_k', mrr)):
+                if not math.isclose(actual, query['metrics'][mode][name], abs_tol=1e-12):
+                    raise ValueError("report query metrics disagree with its rankings")
+    if set(report['suites']) != {q['suite'] for q in report['queries']}:
+        raise ValueError("report suites disagree with its queries")
+    for name, suite in report['suites'].items():
+        selected = [q for q in report['queries'] if q['suite'] == name]
+        if suite['queries'] != len(selected):
+            raise ValueError("report suite query count is inconsistent")
+        for mode in MODES:
+            for metric in METRICS:
+                average = sum(q['metrics'][mode][metric] for q in selected) / len(selected)
+                if not math.isclose(average, suite['metrics'][mode][metric], abs_tol=1e-12):
+                    raise ValueError("report suite metrics disagree with its queries")
+
+
+def compare_reports(baseline, candidate, *, allow_fusion_change=False):
+    """Require the same corpus, selection, implementation and retrieval setup.
+
+    Package/runtime changes are reported explicitly. This compares observed
+    runs, not a controlled statistical attribution to a particular model.
+    """
+    try:
+        for report in (baseline, candidate):
+            if report["schema_version"] != 2:
+                raise ValueError("comparison requires schema-version 2 reports")
+            for key in ("sha256", "selected_records_sha256"):
+                if not _sha256(report["dataset"][key]):
+                    raise ValueError("report is missing a dataset fingerprint")
+            _metadata(report)
+            if not report["queries"] or not report["implementation_sha256"]:
+                raise ValueError("report must contain queries and implementation fingerprints")
+            if len({q["id"] for q in report["queries"]}) != len(report["queries"]):
+                raise ValueError("report contains duplicate query IDs")
+            for query in report["queries"]:
+                _metrics(query["metrics"])
+            for suite in report["suites"].values():
+                _metrics(suite["metrics"])
+            _validate_rankings(report)
+        for field in ("k", "candidates_per_channel", "implementation_sha256"):
+            if baseline[field] != candidate[field]:
+                raise ValueError(f"reports differ in {field}; rerun both with identical evaluation code/settings")
+        if allow_fusion_change:
+            allowed = {'fusion', 'lexical_weight', 'rrf_k'}
+            fixed = [{key: value for key, value in report['retrieval'].items() if key not in allowed}
+                     for report in (baseline, candidate)]
+            if fixed[0] != fixed[1]:
+                raise ValueError('fusion comparisons cannot change other retrieval settings')
+            if any(baseline.get(field) != candidate.get(field)
+                   for field in ('backend', 'python_version', 'sqlite_version')):
+                raise ValueError('fusion comparisons require identical backend and runtime')
+        elif baseline['retrieval'] != candidate['retrieval']:
+            raise ValueError('reports differ in retrieval; use --allow-fusion-change only for an intentional same-model fusion comparison')
+        for field in ("sha256", "selected_records_sha256"):
+            if baseline["dataset"][field] != candidate["dataset"][field]:
+                raise ValueError(f"reports differ in dataset {field}; corpus and selected queries must match")
+        old = {q["id"]: q for q in baseline["queries"]}
+        new = {q["id"]: q for q in candidate["queries"]}
+        if old.keys() != new.keys() or baseline["suites"].keys() != candidate["suites"].keys():
+            raise ValueError("reports must contain identical queries and suites")
+        changes = []
+        for key, left in old.items():
+            right = new[key]
+            for field in ("suite", "query", "expected", "tags"):
+                if left[field] != right[field]:
+                    raise ValueError("reports disagree on query text, labels, tags or suite")
+            if allow_fusion_change:
+                for mode in ('vector', 'fts'):
+                    before = left.get('candidate_sha256', {}).get(mode)
+                    after = right.get('candidate_sha256', {}).get(mode)
+                    if not _sha256(before) or before != after:
+                        raise ValueError('fusion comparisons require identical full vector/FTS candidate fingerprints')
+                    if left['ranked'][mode] != right['ranked'][mode]:
+                        raise ValueError('fusion comparison control-channel rankings differ')
+            delta = {mode: {metric: right["metrics"][mode][metric] - left["metrics"][mode][metric]
+                            for metric in METRICS} for mode in MODES}
+            if any(value for metrics in delta.values() for value in metrics.values()):
+                changes.append({"id": key, "suite": left["suite"], "delta": delta,
+                                "baseline_ranked": left["ranked"], "candidate_ranked": right["ranked"]})
+        suites = {suite: {mode: {metric:
+            candidate["suites"][suite]["metrics"][mode][metric] - baseline["suites"][suite]["metrics"][mode][metric]
+            for metric in METRICS} for mode in MODES} for suite in baseline["suites"]}
+        runtime_changes = {field: {"baseline": baseline.get(field), "candidate": candidate.get(field)}
+                           for field in ("python_version", "sqlite_version")
+                           if baseline.get(field) != candidate.get(field)}
+        return {"schema_version": 1, "k": baseline["k"], "dataset": baseline["dataset"],
+                'comparison_kind': 'fusion' if allow_fusion_change else 'model_or_repeat',
+                'retrieval_settings': {'baseline': baseline['retrieval'], 'candidate': candidate['retrieval']},
+                "baseline_backend": baseline["backend"], "candidate_backend": candidate["backend"],
+                "runtime_changes": runtime_changes, "suite_deltas": suites,
+                "changed_queries": changes, "unchanged_metric_queries": len(old) - len(changes),
+                "note": "Deltas are candidate minus baseline. Zero means equal metrics, not necessarily equal rankings. Selected evaluation cases only; no significance or superiority claim. Backend runtime/settings are included for review."}
+    except (KeyError, TypeError, AttributeError, OverflowError):
+        raise ValueError("incomplete or malformed evaluation report") from None
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("baseline", type=Path)
+    parser.add_argument("candidate", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument('--allow-fusion-change', action='store_true',
+                        help='Compare only fusion settings; require identical model/runtime and all other settings')
+    args = parser.parse_args(argv)
+    try:
+        reports = [json.loads(path.read_text(encoding="utf-8")) for path in (args.baseline, args.candidate)]
+        result = compare_reports(*reports, allow_fusion_change=args.allow_fusion_change)
+        serialized = json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n"
+        if args.output:
+            args.output.write_text(serialized, encoding="utf-8")
+        print(serialized, end="")
+    except (OSError, ValueError) as exc:
+        # Do not echo paths/content from a custom corpus or output file.
+        message = str(exc) if isinstance(exc, ValueError) and not isinstance(exc, json.JSONDecodeError) else "unable to read/write JSON reports"
+        print("Comparison failed: " + message, file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -28,9 +28,11 @@
 
 这是**检索组件**，不是完整知识库业务产品，也不是托管 SaaS。它不负责回答生成、PDF 解析、用户账号、租户内文档权限或分布式存储。订阅管家示例用模板回答演示检索，不是大模型 Agent 平台。
 
-## 安装 v0.4.0
+**v0.5.0** 新增显式启用的实验性 score 融合及可复现本地评测，默认仍为 RRF。参见[升级说明](docs/V0.5.md)。
 
-从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.4.0-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
+## 安装 v0.5.0
+
+从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.0) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.5.0-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
 
 ## 从源码安装
 
@@ -136,6 +138,10 @@ python demo/run_demo.py
 
 新增独立版本的运维合成挑战集、来源/标签说明、校验和校验以及不联网的 `--dry-run` 请求计划，详见[评测指南](eval/README.md)。
 
+也可使用可选的 **CPU 本地模型评测入口**：安装 `.[local-eval]` 后，传入 `--embedder local --model-path "$MODEL_DIR"`，读取事先准备好的可信 safetensors 模型，不自动下载或调用收费接口。现已对固定版本多语言模型实际评测，记录模型指纹、依赖、逐查询排名和退步。[融合研究](docs/FUSION.md)区分旧语料调参与独立合成评测，不把开发集分数当作生产质量证明。
+
+默认仍为 RRF。Python 和 HTTP 搜索可显式选择 `fusion="score"`、`lexical_weight=0.2`，保留余弦差距并限制关键词加分。此权重仅为开发集选出的候选，不是通用最优值；金额、币种等约束仍需专门处理。评测融合差异时使用 `--allow-fusion-change`，工具会核对模型、完整候选指纹及其他控制变量相同。
+
 默认只对 **pipeline 回归集**设置门禁；另有中英双语 semantic 挑战集，默认输出诊断指标。数据是人工合成用例，不是生产质量基准。报告区分模型、数据集及 hybrid/vector/fts 通道，计算 recall@k 与截断排名上的倒数排名指标。
 
 明确选择真实端点后再执行：
@@ -168,3 +174,5 @@ FTS 表含未索引的 tenant_id 列，查询显式过滤。查询文字先分�
 ## License
 
 [MIT](LICENSE)。
+
+公开数据补测中，score 在英语 SciFact 和中文 T2 子集的召回均低于 RRF，保持实验性可选模式，不替换默认策略。长文截断、数字条件与成本见[完整评测说明](eval/public-study/README.md)。

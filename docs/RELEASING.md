@@ -1,8 +1,26 @@
 # Release checklist
 
-Version 0.4.0 is distributed through [GitHub Releases](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0), with wheel, source distribution, offline evaluation report and SHA-256 checksums. The release workflow tests Python 3.10–3.14 and smoke-tests installed distributions before publication. This is not a PyPI publication or a deployed service.
+## Version 0.5.0 publication
 
-Known validation gaps remain: full browser interaction QA, real-provider quality, production load and adversarial security audit. HTTP/admin proxy smoke tests do not replace browser QA.
+The maintainer explicitly authorized the 0.5.0 merge and GitHub Release. The
+version-specific `release-0.5.0.yml` follows the existing repository publication
+pattern: its change on main runs the full core matrix, then builds at that exact
+commit. It refuses an existing tag/release, uploads a draft, downloads and checks
+all assets and installation smoke tests, and publishes only after verification.
+This is one-time authorization for 0.5.0, not future releases. No PyPI upload or
+deployment is included. Do not reuse or modify historical release workflows to
+publish another version.
+
+See [release notes](RELEASE_0.5.0.md), [0.5 compatibility](V0.5.md),
+[CHANGELOG](../CHANGELOG.md), current dependency advisories, public-data provenance
+and the final exact-SHA checks before publication. If a run fails, inspect the
+existing draft/tag/assets before any retry; never overwrite an uncertain release.
+
+## Distribution
+
+Version 0.5.0 is distributed through [GitHub Releases](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.0), with wheel, source distribution, offline pipeline report, evidence-verification log, source commit and SHA-256 checksums. The release workflow tests Python 3.10–3.14 and smoke-tests installed distributions before publication.
+
+Known validation gaps remain: full browser interaction QA, representative production quality, production load and adversarial security audit. HTTP/admin proxy smoke tests do not replace browser QA.
 
 ## Local gates
 

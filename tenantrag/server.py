@@ -248,7 +248,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         k = max(1, min(k, 100))
         try:
-            hits = self.server.rag.search(key, body["query"], k=k)
+            hits = self.server.rag.search(key, body["query"], k=k,
+                fusion=body.get('fusion', 'rrf'), lexical_weight=body.get('lexical_weight'))
         except AuthError:
             self._err(401, "unauthorized")
             return

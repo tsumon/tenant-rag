@@ -1,0 +1,34 @@
+{
+  "audit_date_utc": "2026-11-05",
+  "target_python": "3.12.14",
+  "scanner": "pip-audit 2.10.1",
+  "installed_distribution_count": 42,
+  "torch_normalization": {
+    "installed": "2.13.0+cpu",
+    "queried": "2.13.0"
+  },
+  "pip_check": "passed",
+  "services": {
+    "pypi": {
+      "distribution_count": 42,
+      "advisory_matches": 0,
+      "skipped": 0,
+      "exact_inventory_coverage_verified": true
+    },
+    "osv": {
+      "distribution_count": 42,
+      "advisory_matches": 0,
+      "skipped": 0,
+      "exact_inventory_coverage_verified": true
+    }
+  },
+  "evidence_sha256": {
+    "LICENSE-INVENTORY.md": "a316f65db383de177894dd6596d8ed844d3c06e1a2e745236d6a4c3db72d8b43",
+    "normalized-audit-requirements.txt": "7a13eb23f083c409383993162f6470a661cb2675faf3822a4daffadcee73f665",
+    "osv-audit.json": "cf7bf55cdde14f24e9ade71061857e4ba906561cc394d14e8c903e7e51606248",
+    "pypi-audit.json": "cf7bf55cdde14f24e9ade71061857e4ba906561cc394d14e8c903e7e51606248",
+    "requirements-lock.txt": "a0f4368180f83bee8ba1b2cab5453cf887f177ddbf5496265ea6ffefd612b812",
+    "requires-python.json": "b782d03065714a0da77ba50e3d51b03a0f00906cc6084e3dcb4ea07a8265cf52"
+  },
+  "evidence_scope": "Distribution subset: complete service scan results, actual lock, required-Python metadata and license inventory. Full local scanner logs and installed package metadata are retained separately."
+}

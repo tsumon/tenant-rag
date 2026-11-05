@@ -6,6 +6,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python: ['3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
@@ -18,6 +19,8 @@ jobs:
       - run: python -m unittest discover -v
       - run: python eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
       - run: python demo/run_demo.py
+      - name: Verify retained evaluation evidence
+        run: python scripts/verify_evidence.py
       - name: Build distribution
         run: |
           python -m pip install build==1.3.0
@@ -32,3 +35,10 @@ jobs:
           /tmp/tenant-rag-smoke/bin/python -c "from importlib.resources import files; from tenantrag import TenantRAG; assert files('admin').joinpath('static/index.html').is_file(); r=TenantRAG(':memory:'); r.register('smoke','smoke-test-key'); r.index('smoke-test-key','release smoke test'); assert r.search('smoke-test-key','release'); r.close()"
           /tmp/tenant-rag-smoke/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_installed.py"
           /tmp/tenant-rag-smoke/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_v04.py"
+      - name: Smoke test installed source distribution outside checkout
+        run: |
+          python -m venv /tmp/tenant-rag-source
+          /tmp/tenant-rag-source/bin/pip install --no-deps dist/*.tar.gz
+          cd /tmp
+          /tmp/tenant-rag-source/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_installed.py"
+          /tmp/tenant-rag-source/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_v04.py"

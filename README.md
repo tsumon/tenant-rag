@@ -29,9 +29,12 @@ Small, tenant-scoped hybrid retrieval for personal AI applications.
 
 This is a **retrieval component**, not a complete knowledge-base product or hosted SaaS. It does not generate answers, parse PDFs, manage user accounts, enforce document ACLs inside a tenant, or provide distributed storage. The included subscription agent demonstrates retrieval with templated answers, not an LLM agent platform.
 
-## Install v0.4.0
+**v0.5.0** adds opt-in experimental score fusion and reproducible local evaluation.
+RRF remains the default. See [upgrade notes](docs/V0.5.md).
 
-Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.4.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
+## Install v0.5.0
+
+Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.5.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
 
 ## Install from source
 
@@ -153,7 +156,7 @@ python eval/run_eval.py --json --output eval-report.json
 python demo/run_demo.py
 ```
 
-The [evaluation guide](eval/README.md) also includes a versioned operations challenge, checksum/provenance verification and a no-network `--dry-run` request plan.
+The [evaluation guide](eval/README.md) includes versioned synthetic corpora, checksum verification and a no-network `--dry-run` plan. An optional **CPU local-model path** evaluates an existing safetensors snapshot without a paid API or automatic downloads. A fixed multilingual model has now been run on the public development corpora; [the fusion study](docs/FUSION.md) records the results, tradeoffs and independent-evaluation protocol. These measurements do not establish production quality.
 
 The default gate checks the **pipeline regression suite** using fake lexical embeddings. A separate bilingual semantic challenge suite reports diagnostic results; synthetic fixtures are not a production quality benchmark. Reports identify the embedder and suite. Recall@k and reciprocal rank at the retrieved cutoff compare hybrid, vector and keyword channels.
 
@@ -168,6 +171,12 @@ python eval/run_eval.py --embedder openai --allow-provider-requests \
 Set EMBED_API_KEY (use a non-secret dummy value only for local endpoints that ignore authentication). This opt-in makes network requests and can incur cost; inspect the dataset and endpoint first. **No real-model quality result is claimed by this repository's offline tests.** Hybrid is not guaranteed to outperform vectors on every dataset. Choose quality thresholds after measuring representative, consented data.
 
 ## How retrieval works
+
+RRF remains the default. To test an alternative that preserves cosine margins,
+use `rag.search(key, query, fusion="score", lexical_weight=0.2)` or add the same
+fields to the HTTP search body. This opt-in adds a bounded keyword-ranking
+bonus; it is not a numeric filter or a guarantee of better retrieval. See
+[formula, validation and limits](docs/FUSION.md).
 
 ```text
 API key → tenant ID

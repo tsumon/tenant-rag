@@ -1,0 +1,128 @@
+[
+  {
+    "repository": "BeIR/scifact",
+    "revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+    "source_path": "corpus/corpus-00000-of-00001.parquet",
+    "url": "https://huggingface.co/datasets/BeIR/scifact/resolve/b3b5335604bf5ee3c4447671af975ea25143d4f5/corpus/corpus-00000-of-00001.parquet",
+    "local_path": "raw/BeIR/scifact/corpus/corpus-00000-of-00001.parquet",
+    "bytes": 4469916,
+    "sha256": "243324b35f03d82bd6d98a5f575966876e86cad7ce16e5333a35b1b793dc4f45"
+  },
+  {
+    "repository": "BeIR/scifact",
+    "revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+    "source_path": "queries/queries-00000-of-00001.parquet",
+    "url": "https://huggingface.co/datasets/BeIR/scifact/resolve/b3b5335604bf5ee3c4447671af975ea25143d4f5/queries/queries-00000-of-00001.parquet",
+    "local_path": "raw/BeIR/scifact/queries/queries-00000-of-00001.parquet",
+    "bytes": 64982,
+    "sha256": "1c37956c5dc8b810b60302323c24d1a9e79e26411ba8f5ad9d0888642e2a9034"
+  },
+  {
+    "repository": "BeIR/scifact",
+    "revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+    "source_path": "README.md",
+    "url": "https://huggingface.co/datasets/BeIR/scifact/resolve/b3b5335604bf5ee3c4447671af975ea25143d4f5/README.md",
+    "local_path": "raw/BeIR/scifact/README.md",
+    "bytes": 10407,
+    "sha256": "b5f57be1839fdb75867073986a019a78afe0a149950f79d1165509efc5e5cf2f"
+  },
+  {
+    "repository": "BeIR/scifact-qrels",
+    "revision": "2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029",
+    "source_path": "test.tsv",
+    "url": "https://huggingface.co/datasets/BeIR/scifact-qrels/resolve/2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029/test.tsv",
+    "local_path": "raw/BeIR/scifact-qrels/test.tsv",
+    "bytes": 5389,
+    "sha256": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c"
+  },
+  {
+    "repository": "BeIR/scifact-qrels",
+    "revision": "2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029",
+    "source_path": "README.md",
+    "url": "https://huggingface.co/datasets/BeIR/scifact-qrels/resolve/2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029/README.md",
+    "local_path": "raw/BeIR/scifact-qrels/README.md",
+    "bytes": 13995,
+    "sha256": "fd34a2830e557f1e32d46d0b34a218d280c9800ee4071579610d4ff587b4fd45"
+  },
+  {
+    "repository": "C-MTEB/T2Retrieval",
+    "revision": "8731a845f1bf500a4f111cf1070785c793d10e64",
+    "source_path": "data/corpus-00000-of-00001-8afe7b7a7eca49e3.parquet",
+    "url": "https://huggingface.co/datasets/C-MTEB/T2Retrieval/resolve/8731a845f1bf500a4f111cf1070785c793d10e64/data/corpus-00000-of-00001-8afe7b7a7eca49e3.parquet",
+    "local_path": "raw/C-MTEB/T2Retrieval/data/corpus-00000-of-00001-8afe7b7a7eca49e3.parquet",
+    "bytes": 156789043,
+    "sha256": "d4a207a9277eb1cf31f68ab6a7236cbf3e8fbf9493e0e2b577a34660929fcd17"
+  },
+  {
+    "repository": "C-MTEB/T2Retrieval",
+    "revision": "8731a845f1bf500a4f111cf1070785c793d10e64",
+    "source_path": "data/queries-00000-of-00001-930bf3b805a80dd9.parquet",
+    "url": "https://huggingface.co/datasets/C-MTEB/T2Retrieval/resolve/8731a845f1bf500a4f111cf1070785c793d10e64/data/queries-00000-of-00001-930bf3b805a80dd9.parquet",
+    "local_path": "raw/C-MTEB/T2Retrieval/data/queries-00000-of-00001-930bf3b805a80dd9.parquet",
+    "bytes": 817492,
+    "sha256": "47a5866f1e668700420f44b200f9808c9e799208a46da147dfe380b40fb406ec"
+  },
+  {
+    "repository": "C-MTEB/T2Retrieval",
+    "revision": "8731a845f1bf500a4f111cf1070785c793d10e64",
+    "source_path": "README.md",
+    "url": "https://huggingface.co/datasets/C-MTEB/T2Retrieval/resolve/8731a845f1bf500a4f111cf1070785c793d10e64/README.md",
+    "local_path": "raw/C-MTEB/T2Retrieval/README.md",
+    "bytes": 590,
+    "sha256": "9d6b94f8a11d6f772770b33a200448687248347e64f0332b5f3f2118a3fb0660"
+  },
+  {
+    "repository": "C-MTEB/T2Retrieval-qrels",
+    "revision": "1c83b8d1544e529875e3f6930f3a1fcf749a8e97",
+    "source_path": "data/dev-00000-of-00001-92ed0416056ff7e1.parquet",
+    "url": "https://huggingface.co/datasets/C-MTEB/T2Retrieval-qrels/resolve/1c83b8d1544e529875e3f6930f3a1fcf749a8e97/data/dev-00000-of-00001-92ed0416056ff7e1.parquet",
+    "local_path": "raw/C-MTEB/T2Retrieval-qrels/data/dev-00000-of-00001-92ed0416056ff7e1.parquet",
+    "bytes": 1146734,
+    "sha256": "a283ce5c8bd739e7f5524107586eb21e68d7736172524b79eb5bd844c4b78c00"
+  },
+  {
+    "repository": "C-MTEB/T2Retrieval-qrels",
+    "revision": "1c83b8d1544e529875e3f6930f3a1fcf749a8e97",
+    "source_path": "README.md",
+    "url": "https://huggingface.co/datasets/C-MTEB/T2Retrieval-qrels/resolve/1c83b8d1544e529875e3f6930f3a1fcf749a8e97/README.md",
+    "local_path": "raw/C-MTEB/T2Retrieval-qrels/README.md",
+    "bytes": 505,
+    "sha256": "fa17a7c92d0a6df560a19b41dba5e319b148c6d95e1a2de853c4754827371f1b"
+  },
+  {
+    "repository": "mteb/T2Retrieval",
+    "revision": "921dd3af6e78d1ae7ee0368aa8d7eaee02c8f08e",
+    "source_path": "README.md",
+    "url": "https://huggingface.co/datasets/mteb/T2Retrieval/resolve/921dd3af6e78d1ae7ee0368aa8d7eaee02c8f08e/README.md",
+    "local_path": "raw/mteb/T2Retrieval/README.md",
+    "bytes": 7351,
+    "sha256": "d6c81643950dcd3d548f3a308119feea49b9a6d7d1d2579733a1aba6671a3243"
+  },
+  {
+    "repository": "allenai/scifact",
+    "revision": "68b98a56d93e0f9da0d2aab4e6c3294699a0f72e",
+    "source_path": "LICENSE.md",
+    "url": "https://raw.githubusercontent.com/allenai/scifact/68b98a56d93e0f9da0d2aab4e6c3294699a0f72e/LICENSE.md",
+    "local_path": "provenance/allenai--scifact--LICENSE.md",
+    "bytes": 542,
+    "sha256": "56ee69bc639cbab8f0b2e4b67091ec5e9390aa99a1d65f0a35e4274686c9a806"
+  },
+  {
+    "repository": "allenai/scifact",
+    "revision": "68b98a56d93e0f9da0d2aab4e6c3294699a0f72e",
+    "source_path": "README.md",
+    "url": "https://raw.githubusercontent.com/allenai/scifact/68b98a56d93e0f9da0d2aab4e6c3294699a0f72e/README.md",
+    "local_path": "provenance/allenai--scifact--README.md",
+    "bytes": 8671,
+    "sha256": "3f0eb7f6d009b3785fede6592918b8b583e7193d26f14173fdf0c79aba1dcc79"
+  },
+  {
+    "repository": "THUIR/T2Ranking",
+    "revision": "3ab0a0de72dd50bf84d852a985f6188334781403",
+    "source_path": "README.md",
+    "url": "https://raw.githubusercontent.com/THUIR/T2Ranking/3ab0a0de72dd50bf84d852a985f6188334781403/README.md",
+    "local_path": "provenance/THUIR--T2Ranking--README.md",
+    "bytes": 9697,
+    "sha256": "e75fe58450516cdb76ce49b18be9d5685490f41440e246bb37fbd2543b96f73f"
+  }
+]

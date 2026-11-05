@@ -1,0 +1,37 @@
+{
+  "date_utc": "2026-11-05",
+  "candidate_version": "0.5.0",
+  "publication_status": "unreleased; no merge/tag/release/deployment performed",
+  "core_tests": 208,
+  "tests_status": "passed",
+  "python_matrix": "Final exact-SHA GitHub CI recorded in PR, not inferred from local tests.",
+  "local_packaging": {
+    "wheel": "passed",
+    "sdist": "passed",
+    "isolated_wheel_http_admin_score_v04_smoke": "passed",
+    "isolated_source_http_admin_score_v04_smoke": "passed",
+    "evidence_and_lock_in_sdist": "passed",
+    "no_weights_or_public_corpus_in_wheel": "passed"
+  },
+  "migration": {
+    "baseline_commit": "6c858a39468e6e4f101f32aed6dc01fb84d5f058",
+    "installed_0_4_to_0_5_default_ranks_and_schema": "unchanged",
+    "backup_restore": "passed",
+    "rollback_0_5_written_database_to_installed_0_4": "passed"
+  },
+  "model": {
+    "runtime": "ST5.6.0 / Transformers5.13.0 / torch2.13.0+cpu on Linux Python3.12.14",
+    "all_old_synthetic_per_query_ranks_and_metrics": "unchanged",
+    "full_public_queries": 428,
+    "public_weight_retuning": false,
+    "hosted_calls": 0
+  },
+  "dependency_audit": "Both PyPI and OSV cover all 42 actual model-environment packages with zero known matches and zero skipped entries; dated scan, not a guarantee.",
+  "known_limits": [
+    "Experimental score loses recall to RRF on both public data sets. Default remains RRF.",
+    "Whole-document model truncation affects 98.8%/84.7% English/Chinese passages; no full chunked benchmark improvement claimed.",
+    "Public digit tags are not arithmetic or typed-constraint validation.",
+    "No production scale, adversarial security, full browser UI or answer-generation certification.",
+    "Optional model stack verified on Linux/Python3.12 only; core matrix is separate."
+  ]
+}

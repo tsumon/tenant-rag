@@ -1,0 +1,11 @@
+{
+  "archive": "synthetic-holdout-v1.zip",
+  "bytes": 92564,
+  "sha256": "7b8f6459cb20e91f43368456c8b8abb53f8909b499495d0ba3bc737535f855e5",
+  "dataset_sha256": "7d876228830d398f52dff1366be34be69445bcb990e18440b598f0dbeb556853",
+  "original_local_frozen_commit": "938ceffb382ed550e9eeeb9e850a54459aa31e65",
+  "published_identical_tree_commit": "5c567a508e8cec94b2aee6392fac14c446aeec16",
+  "frozen_tree": "82b915c6899ff53c655d568bcf278d39a3e2fb09",
+  "provenance": "AI-authored and AI-reviewed synthetic data, not human annotation. Previously consumed for one frozen evaluation; now regression evidence.",
+  "runtime": "Historical 3.4.1 / 4.48.3 / torch2.6.0CPU records preserved. New patched-stack regression is recorded separately."
+}
