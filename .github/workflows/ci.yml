@@ -31,3 +31,4 @@ jobs:
           /tmp/tenant-rag-smoke/bin/tenant-rag-admin --help
           /tmp/tenant-rag-smoke/bin/python -c "from importlib.resources import files; from tenantrag import TenantRAG; assert files('admin').joinpath('static/index.html').is_file(); r=TenantRAG(':memory:'); r.register('smoke','smoke-test-key'); r.index('smoke-test-key','release smoke test'); assert r.search('smoke-test-key','release'); r.close()"
           /tmp/tenant-rag-smoke/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_installed.py"
+          /tmp/tenant-rag-smoke/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_v04.py"

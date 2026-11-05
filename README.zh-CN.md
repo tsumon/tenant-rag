@@ -14,19 +14,23 @@
 
 </div>
 
+> **v0.4**：新增模型身份校验、原子重建索引、文本/Markdown 增量导入。旧数据库需显式确认原模型身份或重建索引；升级前请阅读 [升级与导入指南](docs/V0.4.md)。
+
 ## 能做什么
 
 - **混合检索**：余弦向量检索 + FTS5 trigram 关键词检索，通过 RRF 融合排名。
 - **租户逻辑隔离**：API key 解析成租户身份，索引、查询、删除、配额和用量均按租户过滤；不同租户可以使用相同文档 ID。
 - **轻量存储**：SQLite + Python 标准库，适合个人级语料，不需要单独部署向量数据库。
 - **可直接使用**：Python API、Bearer 鉴权 HTTP API、本地浏览器管理界面。
+- **显式长文档导入**：确定性文本/Markdown 切块、来源偏移、父文档原子更新、批量增量向量复用。
+- **模型安全**：保存模型身份和维度，旧数据明确确认来源或全库原子重建，防止同维度模型混用。
 - **离线回归门禁**：隔离、迁移回滚、并发配额、错误请求与检索管线测试。
 
-这是**检索组件**，不是完整知识库业务产品，也不是托管 SaaS。它不负责回答生成、PDF 解析、自动切块、用户账号、租户内文档权限或分布式存储。订阅管家示例用模板回答演示检索，不是大模型 Agent 平台。
+这是**检索组件**，不是完整知识库业务产品，也不是托管 SaaS。它不负责回答生成、PDF 解析、用户账号、租户内文档权限或分布式存储。订阅管家示例用模板回答演示检索，不是大模型 Agent 平台。
 
-## 安装 v0.3.0
+## 安装 v0.4.0
 
-从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.3.0) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.3.0-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
+从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.4.0-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
 
 ## 从源码安装
 
@@ -85,18 +89,22 @@ tenant-rag-admin --api http://127.0.0.1:8000 --port 8002
 
 Python 用法见 [英文完整示例](README.md#python-api)。`TenantRAG` 支持 `with` 自动关闭；同租户相同 doc_id 会覆盖文本、metadata 和向量。全量遍历要显式翻页。
 
+长文档使用 `rag.ingest(key, text, doc_id="handbook", source="handbook.md", format="markdown")`，批量使用 `rag.ingest_batch(key, documents)`。固定父文档 ID 的相同内容重试跳过写入和模型请求；内容哈希包含文本、metadata、source 和切块选项。列表/配额按父文档计数，搜索返回片段及 `metadata._chunk` 中的父 ID、来源、起止偏移。偏移按 Unicode 字符计数，结束位置不包含在内，不是字节或 token。替换/删除父文档会一并移除旧片段；不允许直接修改片段。原有 `index` 仍索引整篇，不自动切块。详见[参数、更新与配额语义](docs/V0.4.md#text-and-markdown-ingestion)。
+
 除 health 外，HTTP 都需 `Authorization: Bearer <tenant-key>`。
 
 | 方法 | 路径 | 参数 / 返回 |
 |---|---|---|
 | POST | `/v1/index` | text，doc_id / metadata 可选；返回文档 ID |
+| POST | `/v1/ingest` | text，doc_id / metadata / source / format / max_chars / overlap 可选；返回父文档及切块摘要 |
+| POST | `/v1/ingest/batch` | documents 和共用 max_chars / overlap；返回原子批量摘要 |
 | POST | `/v1/search` | query、k；返回排名及 matched 通道 |
 | GET | `/v1/docs?limit=100&offset=0` | 分页文档 |
 | DELETE | `/v1/docs/<URL编码后的ID>` | deleted 布尔值 |
 | GET | `/v1/usage` | 配额、今日请求量、限流策略 |
 | GET | `/v1/health` | 无需鉴权，仅检查进程存活，不验证模型服务 |
 
-错误码：参数 `400`，鉴权 `401`，配额 `403`，限流 `429`（含 Retry-After），意外后端/模型错误 `500`。JSON 请求体上限 10 MiB；搜索 k 限制在 1–100，HTTP 列表 limit 限制在 1–1000。默认每租户每进程 60 次/分钟。合法租户请求会计量，包括失败、限流以及 usage 请求本身；按服务器本地日期分天。Python 直接调用不参与 HTTP 限流与请求计量。
+错误码：参数 `400`，鉴权 `401`，配额 `403`，模型身份或并发导入冲突 `409`，限流 `429`（含 Retry-After），意外后端/模型错误 `500`。JSON 请求体上限 10 MiB；搜索 k 限制在 1–100，HTTP 列表 limit 限制在 1–1000。默认每租户每进程 60 次/分钟。合法租户请求会计量，包括失败、限流以及 usage 请求本身；按服务器本地日期分天。Python 直接调用不参与 HTTP 限流与请求计量。
 
 ## 接入真实 embedding
 
@@ -105,6 +113,7 @@ Python 用法见 [英文完整示例](README.md#python-api)。`TenantRAG` 支持
 ```bash
 export EMBED_BASE_URL='http://127.0.0.1:8080/v1'
 export EMBED_MODEL='your-served-embedding-model'
+export EMBED_REVISION='immutable-model-revision'  # 与提供方部署版本保持一致。
 export EMBED_API_KEY='local-demo'  # 仅用于忽略鉴权的本地端点的占位 Bearer 值。
 # 如果端点要求鉴权，请安全设置实际提供方密钥。
 tenant-rag --db semantic.db
@@ -112,7 +121,9 @@ tenant-rag --db semantic.db
 
 Python 可传入 `OpenAIEmbedder(api_key=..., base_url=..., model=...)`。使用提供方明确支持的 embeddings 接口；远程服务应使用 HTTPS。文档和查询会发往该端点，可能产生费用，需自行确认隐私处理政策。不要提交密钥。
 
-**一个数据库固定使用同一 embedding 模型。更换提供方、模型或维度，必须重新索引所有文档。** 当前不保存模型身份，不会自动迁移向量。维度不同的旧向量被跳过，同维度换模型无法自动识别。建议在新数据库完成重建和验证。
+**一个数据库固定使用同一 embedding 模型。** 数据库保存 endpoint/model/revision 身份和观测维度，同维度换模型也会拒绝混用；初始化不请求模型服务。优先使用不可变 revision，默认 `unspecified` 无法发现同名模型在服务端偷偷换权重。旧库没有身份信息时，只有能核实全部旧向量来源的可信管理员才可调用 `adopt_legacy_embeddings()`；否则执行 `reindex(target_embedder)`。重建影响全部租户，仅通过可信 Python 接口提供，不向 HTTP 暴露。失败或提交前中断保持旧索引，重试从头计算而非断点续传，可能重复产生模型费用。
+
+**升级前停止全部 v0.3 进程并验证备份**：旧代码和直接 Store 写入绕过新增身份安全机制，不可混用版本。参阅[迁移操作步骤和边界](docs/V0.4.md#model-identity-and-upgrading-an-existing-database)。
 
 ## 评测与测试
 
@@ -122,6 +133,8 @@ python eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
 python eval/run_eval.py --json --output eval-report.json
 python demo/run_demo.py
 ```
+
+新增独立版本的运维合成挑战集、来源/标签说明、校验和校验以及不联网的 `--dry-run` 请求计划，详见[评测指南](eval/README.md)。
 
 默认只对 **pipeline 回归集**设置门禁；另有中英双语 semantic 挑战集，默认输出诊断指标。数据是人工合成用例，不是生产质量基准。报告区分模型、数据集及 hybrid/vector/fts 通道，计算 recall@k 与截断排名上的倒数排名指标。
 

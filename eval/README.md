@@ -58,6 +58,9 @@ requires both flags below; credentials alone never enable network requests.
 # OPENAI_API_KEY is also accepted if EMBED_API_KEY is absent.
 export EMBED_BASE_URL='https://api.openai.com/v1'
 export EMBED_MODEL='text-embedding-3-small'
+# Set a real immutable deployment revision if your provider exposes one.
+# Otherwise leave EMBED_REVISION unset; do not invent a revision.
+# export EMBED_REVISION='your-immutable-deployment-revision'
 python3 eval/run_eval.py \
   --embedder openai --allow-provider-requests \
   --gate-suite semantic --min-recall 0.8 --min-mrr 0.7 \
@@ -125,3 +128,62 @@ per-query failures, not only the averages.
 真实接口必须显式传入 `--embedder openai --allow-provider-requests`，可能产生费用，
 本次发布未调用真实模型。接入真实模型后仍需用业务留出集验证，混合检索不保证优于
 任意单通道。`--min-mrr` 指截断到 k 的 MRR@k。
+
+## v0.4 reproducibility and a second challenge corpus
+
+`operations-v1.jsonl` is a separate, versioned synthetic challenge: 12 policy
+passages, 2 literal pipeline queries and 11 semantic queries. It covers bilingual
+paraphrases, adjacent-policy hard negatives, negation, a multi-relevant question,
+model migration and source-offset interpretation. Every query includes its
+label rationale. The adjacent `operations-v1.manifest.json` records provenance,
+label policy and the exact file SHA-256. No customer data or model-generated
+retrieval results were used. This is public development material, **not a hidden
+holdout, independently adjudicated labels, or proof of operational correctness**.
+
+Validate the request plan before deliberately allowing any provider calls:
+
+```sh
+python3 eval/run_eval.py \
+  --golden eval/operations-v1.jsonl \
+  --manifest eval/operations-v1.manifest.json \
+  --embedder openai --suite semantic --gate-suite semantic --dry-run
+```
+
+Dry run requires no key or provider opt-in, constructs no embedder, and prints
+only a validated plan. For this selection it plans 23 requests: all 12 documents
+plus the 11 semantic queries. It does not write a report via `--output`, estimate
+cost, or produce a quality/gate result. Inspect the corpus and your provider's
+pricing before replacing `--dry-run` with `--allow-provider-requests` and setting
+credentials. There are no automatic retries. To inspect this corpus offline:
+
+```sh
+python3 eval/run_eval.py --golden eval/operations-v1.jsonl \
+  --manifest eval/operations-v1.manifest.json --json --output operations-offline.json
+```
+
+The manifest is optional for custom corpora. When supplied, a hash mismatch is
+rejected before constructing any provider client. Do not rewrite the manifest
+merely to silence a mismatch: review the changed labels and bump the corpus
+version. Original `golden.jsonl` remains unchanged for baseline comparisons.
+
+Schema-v2 reports include both the original file checksum and a checksum of the
+parsed documents plus selected queries, Python/SQLite versions, implementation
+file hashes, explicit retrieval settings, and per-tag metrics. Tags overlap, so
+their query counts must not be summed; small tag groups are diagnostics rather
+than statistically reliable model comparisons. Reports contain queries and
+relevance labels: treat custom-data reports as private data too. This harness
+still indexes each document as a single retrieval unit (`chunking: false`);
+chunk ingestion is covered by its own correctness tests, not by a semantic
+chunk-quality claim here.
+
+For a meaningful application evaluation, create a separate consented dataset
+matching actual document lengths and language mix. Have a domain owner review
+relevant IDs and plausible distractors, freeze/version the data before comparing
+models, and reserve an unseen holdout. Keep k, candidate limits, corpus and query
+selection identical across runs. Pass `--revision` (or `EMBED_REVISION`) to record your provider's immutable
+model revision as well as its label; hosted aliases can change. The report
+records an endpoint hash rather than the endpoint URL, so keep the exact
+endpoint in your private run configuration. A declared revision is not provider
+attestation, and the default `unspecified` cannot detect silent alias changes. Compare failures
+and tag slices alongside averages. Choose thresholds before the final holdout
+run. Offline fixtures and this entry point do **not** establish real-model quality.

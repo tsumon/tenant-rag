@@ -15,19 +15,23 @@ Small, tenant-scoped hybrid retrieval for personal AI applications.
 
 </div>
 
+> **v0.4:** model identity checks, atomic reindex and incremental text/Markdown ingestion. Existing databases require explicit model adoption or reindex. Read the [upgrade and ingestion guide](docs/V0.4.md) before upgrading.
+
 ## What you get
 
 - **Hybrid search:** cosine vectors + SQLite FTS5 trigram keywords, combined with reciprocal rank fusion (RRF).
 - **Logical tenant isolation:** API keys resolve to tenants; documents, searches, deletion, quotas and usage are tenant-scoped. Different tenants can reuse a document ID.
 - **Small operational footprint:** a SQLite database, Python standard library runtime, optional OpenAI-compatible embeddings.
 - **Usable interfaces:** Python library, bearer-auth HTTP API, and a local browser administration tool.
+- **Explicit long-document ingestion:** deterministic text/Markdown chunks, source offsets, atomic parent updates and incremental batch embedding reuse.
+- **Model safety:** persisted embedding identity and dimension checks, explicit legacy adoption and atomic database-wide reindex.
 - **Regression coverage:** isolation, migration rollback, concurrent quota enforcement, malformed requests and deterministic retrieval evaluation.
 
-This is a **retrieval component**, not a complete knowledge-base product or hosted SaaS. It does not generate answers, parse PDFs, chunk long documents, manage user accounts, enforce document ACLs inside a tenant, or provide distributed storage. The included subscription agent demonstrates retrieval with templated answers, not an LLM agent platform.
+This is a **retrieval component**, not a complete knowledge-base product or hosted SaaS. It does not generate answers, parse PDFs, manage user accounts, enforce document ACLs inside a tenant, or provide distributed storage. The included subscription agent demonstrates retrieval with templated answers, not an LLM agent platform.
 
-## Install v0.3.0
+## Install v0.4.0
 
-Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.3.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.3.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
+Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.4.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
 
 ## Install from source
 
@@ -102,6 +106,10 @@ with TenantRAG('example.db', embedder=FakeEmbedder()) as rag:
 
 Use randomly generated secrets in real applications. Indexing an existing ID replaces its text, metadata and embedding. Pagination is explicit. Python calls do not increment HTTP request metering or use the HTTP rate limiter.
 
+### Long documents and incremental batches
+
+Use `rag.ingest(key, text, doc_id="handbook", source="handbook.md", format="markdown")` for explicit chunking, or `rag.ingest_batch(key, documents)` for an atomic batch. Stable parent IDs make unchanged retries idempotent. Listing and quotas count parents; searches return chunks with `metadata._chunk` source offsets. Delete or replace the parent to remove obsolete chunks. Existing `index` remains a single-document API. See [options, lifecycle and limits](docs/V0.4.md#text-and-markdown-ingestion).
+
 ## HTTP API
 
 Except health, endpoints require `Authorization: Bearer <tenant-key>`.
@@ -109,13 +117,15 @@ Except health, endpoints require `Authorization: Bearer <tenant-key>`.
 | Method | Endpoint | Payload / result |
 |---|---|---|
 | POST | `/v1/index` | `text`, optional `doc_id`, `metadata` → document ID |
+| POST | `/v1/ingest` | `text`, optional `doc_id`, `metadata`, `source`, `format`, `max_chars`, `overlap` → parent/chunk summary |
+| POST | `/v1/ingest/batch` | `documents` plus shared `max_chars`, `overlap` → atomic batch summaries |
 | POST | `/v1/search` | `query`, optional `k` → ranked hits with `matched` channels |
 | GET | `/v1/docs?limit=100&offset=0` | paginated documents |
 | DELETE | `/v1/docs/<url-encoded-id>` | `deleted` boolean |
 | GET | `/v1/usage` | document quota, today's requests, rate policy |
 | GET | `/v1/health` | unauthenticated process liveness, not provider readiness |
 
-Errors: malformed input `400`, invalid key `401`, quota `403`, rate limit `429` with `Retry-After`, unexpected backend/provider failure `500`. JSON bodies are limited to 10 MiB. Search `k` clamps to 1–100, list `limit` to 1–1000. HTTP requests by valid tenants are counted, including failed/rate-limited requests and the usage request itself. Daily usage uses the server's local date. Default rate limit is 60/minute per tenant and per server process.
+Errors: malformed input `400`, invalid key `401`, quota `403`, embedding identity or concurrent ingestion conflict `409`, rate limit `429` with `Retry-After`, unexpected backend/provider failure `500`. JSON bodies are limited to 10 MiB. Search `k` clamps to 1–100, list `limit` to 1–1000. HTTP requests by valid tenants are counted, including failed/rate-limited requests and the usage request itself. Daily usage uses the server's local date. Default rate limit is 60/minute per tenant and per server process.
 
 ## Real embeddings: explicit opt-in
 
@@ -124,6 +134,7 @@ The API server uses a real provider only when `--embed-base-url` or `EMBED_BASE_
 ```bash
 export EMBED_BASE_URL='http://127.0.0.1:8080/v1'
 export EMBED_MODEL='your-served-embedding-model'
+export EMBED_REVISION='immutable-model-revision'  # Match your provider deployment.
 export EMBED_API_KEY='local-demo'  # Dummy bearer value ONLY for a local no-auth endpoint.
 # For authenticated endpoints, securely set the actual provider key instead.
 tenant-rag --db semantic.db
@@ -131,7 +142,7 @@ tenant-rag --db semantic.db
 
 For Python, supply `OpenAIEmbedder(api_key=..., base_url=..., model=...)` to `TenantRAG`. Use a provider's documented embeddings-compatible endpoint, HTTPS for remote services, and an appropriate data-processing policy. Documents and queries are transmitted to that provider and may incur charges. Never commit credentials.
 
-**Choose one embedding model per database. Changing the provider, model or dimensions requires reindexing all documents.** Model identity is not persisted or automatically migrated. Different dimensions are skipped by vector search, and same-dimension model changes are not detectable. A separate new database is the safest migration target.
+**One embedding model per database.** The endpoint/model/revision descriptor and observed dimension are persisted. Same-dimension model changes fail closed; initialization makes no provider requests. Use an immutable revision when possible: the default `unspecified` cannot detect weights changing behind an unchanged provider alias. Existing unlabeled databases require explicit, verified-provenance `adopt_legacy_embeddings()` or a full `reindex(target_embedder)` by a trusted operator. Reindex affects all tenants, commits atomically, and can be retried after interruption; it does not resume paid work. Stop all old v0.3 processes and take a verified backup first. See the [migration cookbook and identity limits](docs/V0.4.md#model-identity-and-upgrading-an-existing-database).
 
 ## Evaluation
 
@@ -141,6 +152,8 @@ python eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
 python eval/run_eval.py --json --output eval-report.json
 python demo/run_demo.py
 ```
+
+The [evaluation guide](eval/README.md) also includes a versioned operations challenge, checksum/provenance verification and a no-network `--dry-run` request plan.
 
 The default gate checks the **pipeline regression suite** using fake lexical embeddings. A separate bilingual semantic challenge suite reports diagnostic results; synthetic fixtures are not a production quality benchmark. Reports identify the embedder and suite. Recall@k and reciprocal rank at the retrieved cutoff compare hybrid, vector and keyword channels.
 
