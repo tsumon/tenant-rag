@@ -3,7 +3,8 @@
 The default hash-bag embedder runs offline. Pipeline regressions and synthetic
 semantic challenges are reported separately; only the pipeline suite is gated
 by default. Real provider calls require both --embedder openai and
---allow-provider-requests. No hosted requests are part of the test suite.
+--allow-provider-requests. Local model evaluation uses an existing snapshot,
+with no download fallback. No hosted requests are part of the test suite.
 """
 from __future__ import annotations
 
@@ -23,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from tenantrag import TenantRAG
 from tenantrag.embed import FakeEmbedder, OpenAIEmbedder
 from tenantrag.search import build_fts_query, hybrid_search
+from eval.local_embedder import LocalModelError, LocalSentenceTransformer
 
 MODES = ("hybrid", "vector", "fts")
 SUITES = ("pipeline", "semantic")
@@ -103,7 +105,7 @@ def dataset_manifest(path, docs, queries, manifest_path=None):
 
 def implementation_fingerprint():
     root = Path(__file__).resolve().parent.parent
-    files = ["eval/run_eval.py", "tenantrag/search.py", "tenantrag/embed.py",
+    files = ["eval/run_eval.py", "eval/local_embedder.py", "tenantrag/search.py", "tenantrag/embed.py",
              "tenantrag/store.py", "tenantrag/service.py", "tenantrag/identity.py",
              "tenantrag/chunking.py"]
     return {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in files}
@@ -231,7 +233,9 @@ def main(argv=None):
     parser.add_argument("--min-mrr", type=_threshold, default=0.0)
     parser.add_argument("--suite", choices=("all",) + SUITES, default="all")
     parser.add_argument("--gate-suite", choices=SUITES, default="pipeline")
-    parser.add_argument("--embedder", choices=("fake", "openai"), default="fake")
+    parser.add_argument("--embedder", choices=("fake", "openai", "local"), default="fake")
+    parser.add_argument("--model-path", type=Path,
+                        help="Existing trusted Sentence Transformers safetensors directory; local backend only, never downloaded")
     parser.add_argument("--allow-provider-requests", action="store_true",
                         help="Permit sending all selected fixture texts to the provider; may incur charges")
     parser.add_argument("--base-url", default=os.environ.get("EMBED_BASE_URL", "https://api.openai.com/v1"))
@@ -241,10 +245,14 @@ def main(argv=None):
     parser.add_argument("--json", action="store_true", help="Print the complete JSON report")
     parser.add_argument("--output", type=Path, help="Also save the JSON report to this file")
     args = parser.parse_args(argv)
+    if args.model_path is not None and args.embedder != "local":
+        parser.error("--model-path requires --embedder local")
+    if args.embedder == "local" and args.model_path is None and not args.dry_run:
+        parser.error("--embedder local requires --model-path to an existing model snapshot")
     if args.embedder == "openai" and not args.allow_provider_requests and not args.dry_run:
         parser.error("provider requests require --allow-provider-requests (fixture text is sent and charges may apply)")
     if args.embedder == "fake" and args.gate_suite == "semantic" and not args.dry_run:
-        parser.error("semantic gates require a real provider; fake semantic scores are diagnostics only")
+        parser.error("semantic gates require a real model; fake semantic scores are diagnostics only")
     try:
         docs, queries = load_golden(args.golden)
     except (ValueError, OSError) as exc:
@@ -262,7 +270,8 @@ def main(argv=None):
               "backend": args.embedder, "k": args.k, "gate_suite": args.gate_suite,
               "planned_embedding_requests": len(docs) + len(queries) if args.embedder == "openai" else 0,
               "provider_requests_made": 0,
-              "note": "One request per document and selected query; all documents remain distractors. No cost estimate or quality result."},
+              "planned_embedding_texts": len(docs) + len(queries),
+              "note": "All documents remain distractors. OpenAI sends one request per text; local uses an existing model with no download fallback. No cost estimate or quality result."},
               ensure_ascii=False, sort_keys=True, indent=2))
         return 0
     if args.embedder == "openai":
@@ -275,6 +284,11 @@ def main(argv=None):
         except ValueError as exc:
             parser.error(str(exc))
         print("Provider evaluation enabled: fixture documents and queries will be sent; charges may apply.", file=sys.stderr)
+    elif args.embedder == "local":
+        try:
+            embedder = LocalSentenceTransformer(args.model_path)
+        except LocalModelError as exc:
+            parser.error(str(exc))
     else:
         embedder = FakeEmbedder()
     try:
@@ -284,17 +298,24 @@ def main(argv=None):
         # exception class is sufficient here; callers can debug in their own app.
         print(f"Evaluation failed ({type(exc).__name__}); no result or gate pass produced.", file=sys.stderr)
         return 2
+    backend = {"name": args.embedder,
+               "model": args.model if args.embedder == "openai" else "hash-bow-v1",
+               "dimensions": embedder.dim,
+               "revision": (args.revision or "unspecified") if args.embedder == "openai" else "md5-cjk-v1",
+               "endpoint_sha256": hashlib.sha256(args.base_url.rstrip("/").encode()).hexdigest() if args.embedder == "openai" else None}
+    if args.embedder == "local":
+        backend.update({"model": "local-sentence-transformers-snapshot",
+                        "revision": embedder.fingerprint["sha256"],
+                        "model_files": embedder.fingerprint,
+                        "runtime_versions": embedder.runtime,
+                        "settings": embedder.settings})
     report.update({
         "schema_version": 2,
         "dataset": dataset,
         "implementation_sha256": implementation_fingerprint(),
         "python_version": platform.python_version(),
         "retrieval": {"rrf_k": 60, "positive_cosine_only": True, "chunking": False},
-        "backend": {"name": args.embedder,
-                    "model": args.model if args.embedder == "openai" else "hash-bow-v1",
-                    "dimensions": embedder.dim,
-                    "revision": (args.revision or "unspecified") if args.embedder == "openai" else "md5-cjk-v1",
-                    "endpoint_sha256": hashlib.sha256(args.base_url.rstrip("/").encode()).hexdigest() if args.embedder == "openai" else None},
+        "backend": backend,
         "sqlite_version": sqlite3.sqlite_version,
         "semantic_quality": (
             "unverified (offline lexical embedder)" if args.embedder == "fake" else

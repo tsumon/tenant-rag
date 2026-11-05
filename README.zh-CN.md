@@ -136,6 +136,8 @@ python demo/run_demo.py
 
 新增独立版本的运维合成挑战集、来源/标签说明、校验和校验以及不联网的 `--dry-run` 请求计划，详见[评测指南](eval/README.md)。
 
+也可使用可选的 **CPU 本地模型评测入口**：安装 `.[local-eval]` 后，传入 `--embedder local --model-path "$MODEL_DIR"`，读取事先准备好的可信 Sentence Transformers safetensors 模型，不自动下载或调用收费接口。报告记录模型文件指纹、依赖版本与推理设置；`eval/compare_reports.py` 可比较相同数据/检索设置/代码下的指标与逐查询退步。当前只验证适配器契约和离线行为，**尚未实测预训练模型分数**，详见[实际验证记录](eval/LOCAL_EVAL_VALIDATION.md)。
+
 默认只对 **pipeline 回归集**设置门禁；另有中英双语 semantic 挑战集，默认输出诊断指标。数据是人工合成用例，不是生产质量基准。报告区分模型、数据集及 hybrid/vector/fts 通道，计算 recall@k 与截断排名上的倒数排名指标。
 
 明确选择真实端点后再执行：

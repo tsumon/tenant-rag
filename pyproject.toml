@@ -14,6 +14,9 @@ authors = [{name = "tenant-rag contributors"}]
 dependencies = []
 classifiers = ["Programming Language :: Python :: 3", "Operating System :: OS Independent"]
 
+[project.optional-dependencies]
+local-eval = ["sentence-transformers==3.4.1"]
+
 [project.urls]
 Repository = "https://github.com/tsumon/tenant-rag"
 

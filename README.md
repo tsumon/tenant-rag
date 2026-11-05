@@ -153,7 +153,7 @@ python eval/run_eval.py --json --output eval-report.json
 python demo/run_demo.py
 ```
 
-The [evaluation guide](eval/README.md) also includes a versioned operations challenge, checksum/provenance verification and a no-network `--dry-run` request plan.
+The [evaluation guide](eval/README.md) also includes a versioned operations challenge, checksum/provenance verification and a no-network `--dry-run` request plan. An optional **CPU local-model path** evaluates an existing Sentence Transformers safetensors snapshot without a paid API or automatic downloads. It records model file hashes and dependency versions; a report comparison command lists metric changes and per-query regressions. Real-model integration and quality remain unverified until run with actual weights.
 
 The default gate checks the **pipeline regression suite** using fake lexical embeddings. A separate bilingual semantic challenge suite reports diagnostic results; synthetic fixtures are not a production quality benchmark. Reports identify the embedder and suite. Recall@k and reciprocal rank at the retrieved cutoff compare hybrid, vector and keyword channels.
 

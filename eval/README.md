@@ -47,6 +47,95 @@ version, per-suite metrics, per-query rankings, relevant IDs and gate outcome.
 There are no timestamps or variable wall-clock measurements, so repeated
 same-environment offline JSON reports can be compared byte for byte.
 
+## Free local-model evaluation (optional, source checkout)
+
+`--embedder local` runs a trusted, **already downloaded** Sentence Transformers
+snapshot on CPU. It does not use provider credentials or paid APIs. The default
+installation still has zero runtime dependencies; install the optional model
+stack only in an environment where package downloads are allowed:
+
+```sh
+python -m pip install '.[local-eval]'
+python eval/run_eval.py --embedder local --gate-suite semantic --dry-run
+```
+
+The dry run works without optional dependencies or model weights. It validates
+the corpus and reports 54 embedding texts and zero provider requests for the
+default corpus; it does not prove that the local model can load.
+
+Obtain an appropriately licensed model from its official source separately.
+Pin its immutable upstream revision and keep that acquisition record alongside
+your run. A bilingual corpus needs a model whose documented language coverage
+includes English and Chinese. This adapter supports a root Transformer followed
+by Pooling and an optional Normalize module, **safetensors weights only**, and no
+custom Python model code. A full repository clone containing additional `.bin`
+weights is rejected: prepare a dedicated snapshot containing the necessary
+configuration/tokenizer files and safetensors weights, not legacy pickle files.
+Model IDs are never resolved or downloaded by this runner. Adapter/PEFT models,
+external tokenizer paths and shards outside the snapshot are rejected. The
+adapter explicitly constructs known modules with offline parameters instead of
+using the generic model loader's fallback paths. Optional Sentence Transformers
+is pinned to 3.4.1, whose loader API was inspected; dependency integration still
+requires an actual model run. Only `max_seq_length` and `do_lower_case` are
+accepted in the saved Transformer module configuration.
+
+```sh
+# MODEL_DIR is an existing trusted model directory containing modules.json.
+# Offline flags add a process-wide guard to the loader's local_files_only=True.
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1 \
+python eval/run_eval.py --embedder local --model-path "$MODEL_DIR" \
+  --gate-suite semantic --output local-report.json
+
+# The second versioned corpus uses the same local model and no provider calls.
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1 \
+python eval/run_eval.py --embedder local --model-path "$MODEL_DIR" \
+  --golden eval/operations-v1.jsonl --manifest eval/operations-v1.manifest.json \
+  --gate-suite semantic --output operations-local-report.json
+```
+
+Reports record a SHA-256 over local relative filenames and file bytes (including
+weights/tokenizer/configuration), dependency versions, CPU execution, normalized
+vectors and model sequence limit. The snapshot is hashed before and after
+loading; keep it unchanged for the entire run. Snapshot symlink files are
+followed; directory symlinks are rejected so loaded subdirectories cannot escape
+the fingerprint. Fingerprints identify bytes, not model provenance or trustworthiness.
+No absolute model path is written to reports. `--model` and `--revision` describe
+only the OpenAI backend; local identity comes from the file fingerprint.
+
+The adapter uses an explicit empty prompt for both documents and queries.
+**Do not use models requiring asymmetric query/document instructions** (for
+example, required `query:`/`passage:` prefixes) with this adapter. Text beyond
+the model's recorded sequence limit may be truncated by the model; this is not
+a chunking evaluation. Numerical results may differ across dependency versions,
+hardware or CPU math implementations even with identical weights. Save the
+report and an environment lockfile for exact run reconstruction.
+
+No pretrained-model score is supplied with this change. Adapter tests use
+mocked model outputs to check configuration, validation and reporting; they are
+not model-quality or dependency-integration evidence. See the dated
+[validation record](LOCAL_EVAL_VALIDATION.md) for what actually ran and what was
+blocked. Default zero thresholds are only a smoke check, not a quality target.
+
+## Compare runs and inspect regressions
+
+```sh
+# Both runs must use the same checkout, complete corpus and query selection.
+python eval/run_eval.py --json --output offline-report.json
+python eval/compare_reports.py offline-report.json local-report.json \
+  --output comparison.json
+```
+
+The comparison refuses different corpus/selection hashes, k, candidate limits,
+retrieval settings or implementation fingerprints. It prints per-suite/channel
+metric changes plus the changed queries' before/after rankings. Deltas are
+candidate minus baseline; unchanged metrics do not imply identical rankings.
+Python/SQLite differences are flagged, and both backend runtime configurations
+are included for review. Comparing lexical and pretrained results describes
+observations on these fixtures, not a statistically controlled model claim.
+Compare pretrained models using the same runtime and review query failures,
+especially bilingual and hard-negative cases. Exit 0 means compatible reports,
+not that the candidate improved; invalid or incompatible reports exit 2.
+
 ## Explicit real-provider evaluation (optional)
 
 This sends fixture documents and selected queries to your configured provider
