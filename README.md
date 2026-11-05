@@ -15,7 +15,7 @@ Small, tenant-scoped hybrid retrieval for personal AI applications.
 
 </div>
 
-> **Development draft:** this branch adds v0.4 features; no v0.4 release has been published. Package metadata remains 0.3.0. The published v0.3.0 wheel does not include these additions. See the [v0.4 upgrade and ingestion guide](docs/V0.4.md).
+> **v0.4:** model identity checks, atomic reindex and incremental text/Markdown ingestion. Existing databases require explicit model adoption or reindex. Read the [upgrade and ingestion guide](docs/V0.4.md) before upgrading.
 
 ## What you get
 
@@ -29,9 +29,9 @@ Small, tenant-scoped hybrid retrieval for personal AI applications.
 
 This is a **retrieval component**, not a complete knowledge-base product or hosted SaaS. It does not generate answers, parse PDFs, manage user accounts, enforce document ACLs inside a tenant, or provide distributed storage. The included subscription agent demonstrates retrieval with templated answers, not an LLM agent platform.
 
-## Install v0.3.0
+## Install v0.4.0
 
-Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.3.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.3.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
+Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.4.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
 
 ## Install from source
 

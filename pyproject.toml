@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tenant-rag"
-version = "0.3.0"
+version = "0.4.0"
 description = "SQLite-backed tenant-scoped hybrid retrieval for small AI applications"
 readme = "README.md"
 requires-python = ">=3.10"

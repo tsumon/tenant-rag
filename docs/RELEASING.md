@@ -1,6 +1,6 @@
 # Release checklist
 
-Version 0.3.0 is distributed through [GitHub Releases](https://github.com/tsumon/tenant-rag/releases/tag/v0.3.0), with wheel, source distribution, offline evaluation report and SHA-256 checksums. The release workflow tests Python 3.10–3.14 and smoke-tests installed distributions before publication. This is not a PyPI publication or a deployed service.
+Version 0.4.0 is distributed through [GitHub Releases](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0), with wheel, source distribution, offline evaluation report and SHA-256 checksums. The release workflow tests Python 3.10–3.14 and smoke-tests installed distributions before publication. This is not a PyPI publication or a deployed service.
 
 Known validation gaps remain: full browser interaction QA, real-provider quality, production load and adversarial security audit. HTTP/admin proxy smoke tests do not replace browser QA.
 
@@ -31,3 +31,13 @@ Known validation gaps remain: full browser interaction QA, real-provider quality
 - Admin body-size/timeout/route handling and Retry-After forwarding.
 - Migration index preservation, context-manager cleanup, server shutdown cleanup and rate configuration validation.
 - Runnable source quickstart and explicit logical-isolation, embedding-migration and backup boundaries.
+
+## 0.4.0 changes
+
+- Persisted endpoint/model/revision and dimensions; explicit legacy adoption or atomic database-wide reindex.
+- Deterministic text/Markdown chunks with Unicode offsets and source metadata.
+- Atomic incremental ingestion, parent updates/deletes, tenant-scoped reuse and parent quotas.
+- Input, overlap and repeated metadata amplification limits.
+- Reproducible synthetic evaluation corpus and no-network provider request planning.
+- Upgrade requires stopping old clients, verifying a backup and following [the migration guide](V0.4.md).
+- Release verification installs both wheel and source distribution, then downloads and verifies published assets and repeats installation smoke tests.

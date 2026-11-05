@@ -1,0 +1,97 @@
+name: publish-v0.4.0
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/release-0.4.0.yml]
+permissions:
+  contents: read
+concurrency:
+  group: publish-v0.4.0
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m unittest discover -v
+      - run: python eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
+      - run: python demo/run_demo.py
+      - run: python -m pip install build==1.3.0 && python -m build
+      - name: Verify installed wheel and source distribution
+        run: |
+          python -m venv /tmp/tenant-wheel
+          /tmp/tenant-wheel/bin/pip install --no-deps dist/*.whl
+          /tmp/tenant-wheel/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_installed.py"
+          /tmp/tenant-wheel/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_v04.py"
+          python -m venv /tmp/tenant-source
+          /tmp/tenant-source/bin/pip install --no-deps dist/*.tar.gz
+          /tmp/tenant-source/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_installed.py"
+          /tmp/tenant-source/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_v04.py"
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build release assets
+        run: |
+          python -c "import tomllib; assert tomllib.load(open('pyproject.toml','rb'))['project']['version'] == '0.4.0'"
+          python -m pip install build==1.3.0
+          python -m build
+          python eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7 --json --output dist/offline-eval.json
+          python -m venv /tmp/release-smoke
+          /tmp/release-smoke/bin/pip install --no-deps dist/*.whl
+          /tmp/release-smoke/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_installed.py"
+          /tmp/release-smoke/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_v04.py"
+          printf '%s\n' "$GITHUB_SHA" > dist/SOURCE_COMMIT.txt
+          cd dist
+          sha256sum tenant_rag-0.4.0-py3-none-any.whl tenant_rag-0.4.0.tar.gz offline-eval.json SOURCE_COMMIT.txt > SHA256SUMS
+      - name: Publish v0.4.0 once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > /tmp/release-notes.md <<'NOTES'
+          ## tenant-rag 0.4.0
+          Installable SQLite-backed tenant-scoped hybrid retrieval with zero third-party runtime dependencies.
+
+          - Persisted model/provider/revision identity and safe atomic reindex across all tenants.
+          - Deterministic text/Markdown chunking, Unicode offsets/source, atomic incremental batches and parent lifecycle.
+          - Parent quotas, tenant-scoped embedding reuse and bounded overlap/metadata amplification.
+          - Python 3.10–3.14 tests, offline evaluation, wheel and source-install smoke gates.
+
+          **Upgrade:** stop all old v0.3 clients and verify a backup. Legacy databases require explicit original-model adoption or complete reindex. Read https://github.com/tsumon/tenant-rag/blob/v0.4.0/docs/V0.4.md before upgrading. Model identity is operator-declared; reindex is all-or-nothing but retries from the beginning, not durable resume.
+
+          Download the wheel and SHA256SUMS, verify its SHA-256, and install with:
+          `python -m pip install tenant_rag-0.4.0-py3-none-any.whl`
+
+          Requires Python 3.10+ and SQLite FTS5 trigram support. The offline evaluation uses synthetic lexical embeddings and is not proof of semantic model quality. Logical tenant isolation is not physical isolation. Full browser interaction QA, production load and security audit remain unverified. Use in local/trusted environments; this is not a hosted SaaS or production deployment. No PyPI upload is included.
+          NOTES
+          gh release create v0.4.0 dist/* --target "$GITHUB_SHA" --title "tenant-rag 0.4.0" --notes-file /tmp/release-notes.md
+          mkdir /tmp/release-download
+          gh release download v0.4.0 --dir /tmp/release-download
+          cd /tmp/release-download
+          sha256sum -c SHA256SUMS
+          python -m venv /tmp/download-wheel
+          /tmp/download-wheel/bin/pip install --no-deps tenant_rag-0.4.0-py3-none-any.whl
+          /tmp/download-wheel/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_installed.py"
+          /tmp/download-wheel/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_v04.py"
+          python -m venv /tmp/download-source
+          /tmp/download-source/bin/pip install --no-deps tenant_rag-0.4.0.tar.gz
+          /tmp/download-source/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_installed.py"
+          /tmp/download-source/bin/python -I "$GITHUB_WORKSPACE/scripts/smoke_v04.py"
