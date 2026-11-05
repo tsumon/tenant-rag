@@ -51,7 +51,9 @@ class MigrationTest(unittest.TestCase):
 
         # 用新代码打开：触发迁移
         rag = TenantRAG(db, embedder=FakeEmbedder())
-        # 老数据可读
+        # Legacy rows remain readable but require explicit reindex before vector use.
+        self.assertEqual(rag.list_docs("test-key-a")[0]["doc_id"], "d1")
+        rag.reindex(FakeEmbedder())
         hits = rag.search("test-key-a", "腾讯视频多少钱")
         self.assertEqual(hits[0]["doc_id"], "d1")
         # 新语义可用：同租户覆盖、doc_id 租户内唯一

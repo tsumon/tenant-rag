@@ -81,6 +81,7 @@ class RobustnessTest(unittest.TestCase):
 
 
 class BrokenEmbedder(Embedder):
+    embedding_identity = {"provider": "test", "model": "broken", "revision": "1"}
     dim = 256
 
     def embed(self, texts):

@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS usage_meter(
 """
 
 
+CHUNK_SCHEMA = 'CREATE TABLE IF NOT EXISTS parent_docs(\n  tenant_id TEXT NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,\n  parent_id TEXT NOT NULL,\n  text TEXT NOT NULL,\n  metadata TEXT NOT NULL,\n  source TEXT,\n  content_hash TEXT NOT NULL,\n  options TEXT NOT NULL,\n  created_at REAL NOT NULL,\n  PRIMARY KEY(tenant_id, parent_id)\n);\nCREATE TABLE IF NOT EXISTS doc_chunks(\n  tenant_id TEXT NOT NULL,\n  doc_id TEXT NOT NULL,\n  parent_id TEXT NOT NULL,\n  start INTEGER NOT NULL,\n  end INTEGER NOT NULL,\n  PRIMARY KEY(tenant_id, doc_id),\n  FOREIGN KEY(tenant_id, doc_id) REFERENCES docs(tenant_id, doc_id) ON DELETE CASCADE,\n  FOREIGN KEY(tenant_id, parent_id) REFERENCES parent_docs(tenant_id, parent_id) ON DELETE CASCADE\n);\n'
+
+
 def _pack(vec: list[float]) -> tuple[bytes, int]:
     return struct.pack(f"<{len(vec)}f", *vec), len(vec)
 
@@ -95,6 +98,7 @@ class Store:
             self._con.execute("PRAGMA foreign_keys=ON")
             self._con.executescript(SCHEMA)
             self._migrate_v2()
+            self._con.executescript(CHUNK_SCHEMA)
         except Exception:
             self._con.close()
             raise
@@ -212,7 +216,9 @@ class Store:
     def doc_count(self, tenant_id: str) -> int:
         with self.lock:
             row = self._con.execute(
-                "SELECT COUNT(*) FROM docs WHERE tenant_id=?", (tenant_id,)
+                "SELECT (SELECT COUNT(*) FROM docs d WHERE d.tenant_id=? AND NOT EXISTS"
+                " (SELECT 1 FROM doc_chunks c WHERE c.tenant_id=d.tenant_id AND c.doc_id=d.doc_id))"
+                " + (SELECT COUNT(*) FROM parent_docs WHERE tenant_id=?)", (tenant_id, tenant_id)
             ).fetchone()
             return row[0]
 
@@ -274,22 +280,31 @@ class Store:
                 self._con.rollback()
                 raise
 
+    def _delete_parent(self, tenant_id: str, parent_id: str) -> bool:
+        """Internal transaction-only helper; never commits."""
+        ids = [r[0] for r in self._con.execute(
+            "SELECT doc_id FROM doc_chunks WHERE tenant_id=? AND parent_id=?",
+            (tenant_id, parent_id))]
+        for doc_id in ids:
+            self._con.execute("DELETE FROM docs_fts WHERE tenant_id=? AND doc_id=?", (tenant_id, doc_id))
+            self._con.execute("DELETE FROM docs WHERE tenant_id=? AND doc_id=?", (tenant_id, doc_id))
+        return self._con.execute("DELETE FROM parent_docs WHERE tenant_id=? AND parent_id=?",
+                                 (tenant_id, parent_id)).rowcount > 0
+
     def delete_doc(self, tenant_id: str, doc_id: str) -> bool:
         with self.lock:
             try:
-                cur = self._con.execute(
-                    "DELETE FROM docs WHERE tenant_id=? AND doc_id=?", (tenant_id, doc_id)
-                )
-                if cur.rowcount:
-                    self._con.execute(
-                        "DELETE FROM docs_fts WHERE tenant_id=? AND doc_id=?",
-                        (tenant_id, doc_id),
-                    )
-                # miss 时也要 commit：0 行的 DELETE 同样开过隐式事务，
-                # 不收尾会一直占着 RESERVED 写锁，挡住其他连接的写。
+                self._con.execute("BEGIN IMMEDIATE")
+                # A chunk is not an independently mutable document.
+                if self._con.execute("SELECT 1 FROM doc_chunks WHERE tenant_id=? AND doc_id=?",
+                                     (tenant_id, doc_id)).fetchone():
+                    raise ValueError("delete the parent document, not an individual chunk")
+                deleted = self._delete_parent(tenant_id, doc_id)
+                cur = self._con.execute("DELETE FROM docs WHERE tenant_id=? AND doc_id=?", (tenant_id, doc_id))
+                self._con.execute("DELETE FROM docs_fts WHERE tenant_id=? AND doc_id=?", (tenant_id, doc_id))
                 self._con.commit()
-                return cur.rowcount > 0
-            except Exception:
+                return deleted or cur.rowcount > 0
+            except BaseException:
                 self._con.rollback()
                 raise
 
@@ -350,9 +365,12 @@ class Store:
         offset = max(0, int(offset))
         with self.lock:
             rows = self._con.execute(
-                "SELECT doc_id, text, metadata FROM docs"
-                " WHERE tenant_id=? ORDER BY rowid LIMIT ? OFFSET ?",
-                (tenant_id, limit, offset),
+                "SELECT doc_id, text, metadata FROM ("
+                " SELECT d.doc_id,d.text,d.metadata,d.created_at FROM docs d WHERE d.tenant_id=?"
+                " AND NOT EXISTS(SELECT 1 FROM doc_chunks c WHERE c.tenant_id=d.tenant_id AND c.doc_id=d.doc_id)"
+                " UNION ALL SELECT parent_id,text,metadata,created_at FROM parent_docs WHERE tenant_id=?)"
+                " ORDER BY created_at,doc_id LIMIT ? OFFSET ?",
+                (tenant_id, tenant_id, limit, offset),
             ).fetchall()
         return [
             {"doc_id": r[0], "text": r[1], "metadata": json.loads(r[2])}

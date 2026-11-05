@@ -12,6 +12,7 @@ import hashlib
 import json
 import math
 import os
+import platform
 from pathlib import Path
 import sqlite3
 import sys
@@ -80,6 +81,41 @@ def load_golden(path):
     return docs, queries
 
 
+def dataset_manifest(path, docs, queries, manifest_path=None):
+    """Pin the exact bytes plus parsed, selected records before any requests."""
+    digest = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    result = {"name": Path(path).name, "sha256": digest,
+              "documents": len(docs), "queries": len(queries),
+              "selected_records_sha256": hashlib.sha256(json.dumps(
+                  {"docs": docs, "queries": queries}, ensure_ascii=False,
+                  sort_keys=True, separators=(",", ":")).encode()).hexdigest()}
+    if manifest_path is not None:
+        manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+        if not isinstance(manifest, dict) or manifest.get("sha256") != digest:
+            raise ValueError("dataset manifest SHA-256 does not match the corpus")
+        for field in ("dataset_id", "version", "provenance", "label_policy"):
+            if not isinstance(manifest.get(field), str) or not manifest[field].strip():
+                raise ValueError(f"dataset manifest requires non-empty {field}")
+        result["manifest"] = {key: manifest[key] for key in
+                              ("dataset_id", "version", "provenance", "label_policy")}
+    return result
+
+
+def implementation_fingerprint():
+    root = Path(__file__).resolve().parent.parent
+    files = ["eval/run_eval.py", "tenantrag/search.py", "tenantrag/embed.py",
+             "tenantrag/store.py", "tenantrag/service.py", "tenantrag/identity.py",
+             "tenantrag/chunking.py"]
+    return {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in files}
+
+
+def aggregate(details):
+    return {"queries": len(details), "metrics": {mode: {
+        metric: sum(query["metrics"][mode][metric] for query in details) / len(details)
+        for metric in ("recall_at_k", "mrr_at_k")
+    } for mode in MODES}}
+
+
 def recall_at_k(expected, ranked, k):
     topk = {doc_id for doc_id, _ in ranked[:k]}
     return len(set(expected) & topk) / len(set(expected))
@@ -140,14 +176,12 @@ def evaluate(docs, queries, embedder, k=3):
         selected = [query for query in details if query["suite"] == suite]
         if not selected:
             continue
-        suites[suite] = {
-            "queries": len(selected),
-            "metrics": {mode: {
-                metric: sum(query["metrics"][mode][metric] for query in selected) / len(selected)
-                for metric in ("recall_at_k", "mrr_at_k")
-            } for mode in MODES},
-        }
-    return {"k": k, "candidates_per_channel": CANDIDATES, "suites": suites, "queries": details}
+        suites[suite] = aggregate(selected)
+    tags = {tag: aggregate([query for query in details if tag in query["tags"]])
+            for tag in sorted({tag for query in details for tag in query["tags"]})}
+    return {"k": k, "candidates_per_channel": CANDIDATES, "suites": suites,
+            "tags": tags, "queries": details}
+
 
 
 def _positive_int(value):
@@ -189,6 +223,8 @@ def _print_report(report):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, help="Verify an optional corpus provenance manifest and SHA-256")
+    parser.add_argument("--dry-run", action="store_true", help="Validate inputs and print request plan without creating an embedder or making requests")
     parser.add_argument("--golden", type=Path, default=DEFAULT_GOLDEN)
     parser.add_argument("--k", type=_positive_int, default=3)
     parser.add_argument("--min-recall", type=_threshold, default=0.0)
@@ -199,13 +235,15 @@ def main(argv=None):
     parser.add_argument("--allow-provider-requests", action="store_true",
                         help="Permit sending all selected fixture texts to the provider; may incur charges")
     parser.add_argument("--base-url", default=os.environ.get("EMBED_BASE_URL", "https://api.openai.com/v1"))
+    parser.add_argument("--revision", default=os.environ.get("EMBED_REVISION"),
+                        help="Immutable provider model revision, if available")
     parser.add_argument("--model", default=os.environ.get("EMBED_MODEL", "text-embedding-3-small"))
     parser.add_argument("--json", action="store_true", help="Print the complete JSON report")
     parser.add_argument("--output", type=Path, help="Also save the JSON report to this file")
     args = parser.parse_args(argv)
-    if args.embedder == "openai" and not args.allow_provider_requests:
+    if args.embedder == "openai" and not args.allow_provider_requests and not args.dry_run:
         parser.error("provider requests require --allow-provider-requests (fixture text is sent and charges may apply)")
-    if args.embedder == "fake" and args.gate_suite == "semantic":
+    if args.embedder == "fake" and args.gate_suite == "semantic" and not args.dry_run:
         parser.error("semantic gates require a real provider; fake semantic scores are diagnostics only")
     try:
         docs, queries = load_golden(args.golden)
@@ -215,12 +253,25 @@ def main(argv=None):
         queries = [query for query in queries if query["suite"] == args.suite]
     if not queries or not any(query["suite"] == args.gate_suite for query in queries):
         parser.error("selected queries must contain the requested gate suite")
+    try:
+        dataset = dataset_manifest(args.golden, docs, queries, args.manifest)
+    except (ValueError, OSError) as exc:
+        parser.error(str(exc))
+    if args.dry_run:
+        print(json.dumps({"dry_run": True, "dataset": dataset,
+              "backend": args.embedder, "k": args.k, "gate_suite": args.gate_suite,
+              "planned_embedding_requests": len(docs) + len(queries) if args.embedder == "openai" else 0,
+              "provider_requests_made": 0,
+              "note": "One request per document and selected query; all documents remain distractors. No cost estimate or quality result."},
+              ensure_ascii=False, sort_keys=True, indent=2))
+        return 0
     if args.embedder == "openai":
         api_key = os.environ.get("EMBED_API_KEY") or os.environ.get("OPENAI_API_KEY")
         if not api_key or not api_key.strip():
             parser.error("set EMBED_API_KEY (or OPENAI_API_KEY) before provider evaluation")
         try:
-            embedder = OpenAIEmbedder(api_key=api_key, base_url=args.base_url, model=args.model)
+            options = {"revision": args.revision} if args.revision is not None else {}
+            embedder = OpenAIEmbedder(api_key=api_key, base_url=args.base_url, model=args.model, **options)
         except ValueError as exc:
             parser.error(str(exc))
         print("Provider evaluation enabled: fixture documents and queries will be sent; charges may apply.", file=sys.stderr)
@@ -234,13 +285,16 @@ def main(argv=None):
         print(f"Evaluation failed ({type(exc).__name__}); no result or gate pass produced.", file=sys.stderr)
         return 2
     report.update({
-        "schema_version": 1,
-        "dataset": {"name": args.golden.name,
-                    "sha256": hashlib.sha256(args.golden.read_bytes()).hexdigest(),
-                    "documents": len(docs), "queries": len(queries)},
+        "schema_version": 2,
+        "dataset": dataset,
+        "implementation_sha256": implementation_fingerprint(),
+        "python_version": platform.python_version(),
+        "retrieval": {"rrf_k": 60, "positive_cosine_only": True, "chunking": False},
         "backend": {"name": args.embedder,
                     "model": args.model if args.embedder == "openai" else "hash-bow-v1",
-                    "dimensions": embedder.dim},
+                    "dimensions": embedder.dim,
+                    "revision": (args.revision or "unspecified") if args.embedder == "openai" else "md5-cjk-v1",
+                    "endpoint_sha256": hashlib.sha256(args.base_url.rstrip("/").encode()).hexdigest() if args.embedder == "openai" else None},
         "sqlite_version": sqlite3.sqlite_version,
         "semantic_quality": (
             "unverified (offline lexical embedder)" if args.embedder == "fake" else

@@ -23,7 +23,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
 from .embed import FakeEmbedder, OpenAIEmbedder
-from .service import AuthError, QuotaError, TenantRAG
+from .identity import EmbeddingIdentityError
+from .service import IngestionConflictError, AuthError, QuotaError, TenantRAG
 from .store import IsolationError
 
 
@@ -132,10 +133,18 @@ class Handler(BaseHTTPRequestHandler):
             path = urlparse(self.path).path
             if path == "/v1/index":
                 self._handle_index()
+            elif path == "/v1/ingest":
+                self._handle_ingest()
+            elif path == "/v1/ingest/batch":
+                self._handle_ingest(batch=True)
             elif path == "/v1/search":
                 self._handle_search()
             else:
                 self._err(404, "not_found")
+        except IngestionConflictError as e:
+            self._safe_err(409, "ingestion_conflict", hint=str(e))
+        except EmbeddingIdentityError as e:
+            self._safe_err(409, "embedding_identity_conflict", hint=str(e))
         except ValueError as e:
             self._safe_err(400, "bad_request", hint=str(e))
         except Exception:
@@ -152,6 +161,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, {"ok": True})
             else:
                 self._err(404, "not_found")
+        except IngestionConflictError as e:
+            self._safe_err(409, "ingestion_conflict", hint=str(e))
+        except EmbeddingIdentityError as e:
+            self._safe_err(409, "embedding_identity_conflict", hint=str(e))
         except ValueError as e:
             self._safe_err(400, "bad_request", hint=str(e))
         except Exception:
@@ -164,6 +177,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._handle_delete(unquote(parts[2]))
             else:
                 self._err(404, "not_found")
+        except IngestionConflictError as e:
+            self._safe_err(409, "ingestion_conflict", hint=str(e))
+        except EmbeddingIdentityError as e:
+            self._safe_err(409, "embedding_identity_conflict", hint=str(e))
         except ValueError as e:
             self._safe_err(400, "bad_request", hint=str(e))
         except Exception:
@@ -195,6 +212,26 @@ class Handler(BaseHTTPRequestHandler):
             self._err(403, "forbidden", hint=str(e))
             return
         self._send(200, {"doc_id": doc_id})
+
+    def _handle_ingest(self, batch=False):
+        key = self._guard()
+        if key is None:
+            return
+        body = self._read_json()
+        if not isinstance(body, dict):
+            raise ValueError("body must be an object")
+        options = {"max_chars": body.get("max_chars", 1000), "overlap": body.get("overlap", 100)}
+        try:
+            if batch:
+                result = self.server.rag.ingest_batch(key, body.get("documents"), **options)
+                self._send(200, {"documents": result})
+            else:
+                result = self.server.rag.ingest(key, body.get("text"), doc_id=body.get("doc_id"),
+                    metadata=body.get("metadata"), source=body.get("source"),
+                    format=body.get("format", "text"), **options)
+                self._send(200, result)
+        except QuotaError as exc:
+            self._err(403, "quota_exceeded", hint=str(exc))
 
     def _handle_search(self):
         key = self._guard()
@@ -309,6 +346,7 @@ def main():
     ap.add_argument("--db", default=os.environ.get("TENANTRAG_DB", "tenantrag.db"))
     ap.add_argument("--rate", type=int, default=60, help="每租户每分钟请求数")
     ap.add_argument("--embed-base-url", default=os.environ.get("EMBED_BASE_URL"))
+    ap.add_argument("--embed-revision", default=os.environ.get("EMBED_REVISION", "unspecified"))
     ap.add_argument("--embed-model", default=os.environ.get("EMBED_MODEL", "text-embedding-3-small"))
     args = ap.parse_args()
     if args.rate <= 0:
@@ -319,7 +357,7 @@ def main():
         api_key = os.environ.get("EMBED_API_KEY", "")
         try:
             embedder = OpenAIEmbedder(
-                api_key=api_key, base_url=args.embed_base_url, model=args.embed_model
+                api_key=api_key, base_url=args.embed_base_url, model=args.embed_model, revision=args.embed_revision
             )
         except ValueError as exc:
             ap.error(str(exc) + "; configure EMBED_API_KEY / --embed-base-url / --embed-model")

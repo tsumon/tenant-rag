@@ -55,6 +55,8 @@ class FakeEmbedder(Embedder):
         if type(dim) is not int or dim <= 0:
             raise ValueError("dim must be a positive integer")
         self.dim = dim
+        self.embedding_identity = {"provider": "tenant-rag", "model": "lexical-hash",
+                                   "revision": "md5-cjk-v1"}
 
     def _vec(self, text: str) -> list[float]:
         v = [0.0] * self.dim
@@ -106,6 +108,7 @@ class OpenAIEmbedder(Embedder):
         base_url: str = "https://api.openai.com/v1",
         model: str = "text-embedding-3-small",
         timeout: float = 30,
+        revision: str = "unspecified",
     ):
         if not isinstance(api_key, str) or not api_key.strip():
             raise ValueError("api_key must be a non-empty string")
@@ -121,6 +124,10 @@ class OpenAIEmbedder(Embedder):
         if (type(timeout) not in (int, float) or not math.isfinite(timeout)
                 or timeout <= 0):
             raise ValueError("timeout must be a positive finite number")
+        if not isinstance(revision, str) or not revision.strip():
+            raise ValueError("revision must be a non-empty string")
+        self.embedding_identity = {"provider": base_url.rstrip("/"), "model": model,
+                                   "revision": revision}
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.model = model

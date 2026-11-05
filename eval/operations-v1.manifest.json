@@ -1,0 +1,7 @@
+{
+  "dataset_id": "tenant-rag-synthetic-operations",
+  "version": "1",
+  "sha256": "3a0fe693286449cfec29cfa5dd725dcca87491f654febbd9a4c9ec5962091acf",
+  "provenance": "Invented bilingual operational-policy fixtures authored for tenant-rag v0.4; no customer data, external corpus, or real-model outputs. This dataset is public development material, not a statistically independent held-out benchmark.",
+  "label_policy": "Each query has manually authored expected IDs and a label_rationale. Relevant means the document directly answers at least one requested part. Plausible adjacent policies remain distractors; labels have not received independent human adjudication."
+}
