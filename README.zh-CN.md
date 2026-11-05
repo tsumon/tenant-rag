@@ -30,9 +30,17 @@
 
 **v0.5.0** 新增显式启用的实验性 score 融合及可复现本地评测，默认仍为 RRF。参见[升级说明](docs/V0.5.md)。
 
-## 安装 v0.5.0
+## 真实本地模型案例
 
-从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.0) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.5.0-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
+[完整中英双租户教程](examples/local_trial/README.zh-CN.md)从正式 v0.5.0 wheel
+开始，下载校验固定版本的免费本地 embedding 模型，导入合成 Markdown，
+核对来源原文与租户隔离。已在干净 CPU 环境复现。也保留失败：默认 RRF
+只取回 14 个有答案问题中的 12 个完整标注句，两个无答案问题仍返回片段。
+这不是 LLM 生成回答或独立质量评测。v0.5.1 加入案例，核心行为不变。
+
+## 安装 v0.5.1
+
+从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.1) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.5.1-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
 
 ## 从源码安装
 

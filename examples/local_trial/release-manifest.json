@@ -1,0 +1,25 @@
+{
+  "tag": "v0.5.0",
+  "source_commit": "5a52e0a18edcb145e66a03b0a84aeea15b0e6f4b",
+  "release_url": "https://github.com/tsumon/tenant-rag/releases/tag/v0.5.0",
+  "assets": [
+    {
+      "name": "SHA256SUMS",
+      "browser_download_url": "https://github.com/tsumon/tenant-rag/releases/download/v0.5.0/SHA256SUMS",
+      "size": 450,
+      "digest": "sha256:98092766bb3220daeb62ff8e237119f5785f99ecc2c69e640eb54045bba9a201"
+    },
+    {
+      "name": "SOURCE_COMMIT.txt",
+      "browser_download_url": "https://github.com/tsumon/tenant-rag/releases/download/v0.5.0/SOURCE_COMMIT.txt",
+      "size": 41,
+      "digest": "sha256:648024a63427a43d1fae9eebf47cc2cdddc8356d92e9dc161b2a23eb942a181a"
+    },
+    {
+      "name": "tenant_rag-0.5.0-py3-none-any.whl",
+      "browser_download_url": "https://github.com/tsumon/tenant-rag/releases/download/v0.5.0/tenant_rag-0.5.0-py3-none-any.whl",
+      "size": 43577,
+      "digest": "sha256:4402ea42af53d4d1fd02de8a0baa0d912436e187495c8c394ffd1743bbbaf76c"
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+[
+  {
+    "id": "q01",
+    "tenant": "aurora",
+    "query": "How long after my parcel arrives can I send back an untouched accessory?",
+    "relevant": [
+      {
+        "doc_id": "refunds",
+        "evidence": "Aurora accepts unused accessories within 21 calendar days of delivery."
+      }
+    ],
+    "category": "paraphrase"
+  },
+  {
+    "id": "q02",
+    "tenant": "cedar",
+    "query": "How long after my parcel arrives can I send back an untouched accessory?",
+    "relevant": [
+      {
+        "doc_id": "refunds",
+        "evidence": "Cedar accepts unused accessories within 35 calendar days of delivery."
+      }
+    ],
+    "category": "paraphrase"
+  },
+  {
+    "id": "q03",
+    "tenant": "aurora",
+    "query": "What is the minimum basket amount for free delivery?",
+    "relevant": [
+      {
+        "doc_id": "shipping",
+        "evidence": "Aurora offers free standard shipping on orders of at least 60 credits."
+      }
+    ],
+    "category": "numeric"
+  },
+  {
+    "id": "q04",
+    "tenant": "cedar",
+    "query": "What is the minimum basket amount for free delivery?",
+    "relevant": [
+      {
+        "doc_id": "shipping",
+        "evidence": "Cedar offers free standard shipping on orders of at least 90 credits."
+      }
+    ],
+    "category": "numeric"
+  },
+  {
+    "id": "q05",
+    "tenant": "aurora",
+    "query": "台灯从收到货开始能保修几个月？",
+    "relevant": [
+      {
+        "doc_id": "warranty",
+        "evidence": "Aurora desk lamps have an 18-month warranty from delivery."
+      }
+    ],
+    "category": "cross_language"
+  },
+  {
+    "id": "q06",
+    "tenant": "cedar",
+    "query": "台灯从收到货开始能保修几个月？",
+    "relevant": [
+      {
+        "doc_id": "warranty",
+        "evidence": "Cedar desk lamps have a 30-month warranty from delivery."
+      }
+    ],
+    "category": "cross_language"
+  },
+  {
+    "id": "q07",
+    "tenant": "aurora",
+    "query": "If I accidentally spill water on my lamp, is repair covered?",
+    "relevant": [
+      {
+        "doc_id": "warranty",
+        "evidence": "Aurora warranty excludes accidental water damage."
+      }
+    ],
+    "category": "negation"
+  },
+  {
+    "id": "q08",
+    "tenant": "cedar",
+    "query": "If I accidentally spill water on my lamp, is repair covered?",
+    "relevant": [
+      {
+        "doc_id": "warranty",
+        "evidence": "Cedar warranty includes one accidental water-damage repair."
+      }
+    ],
+    "category": "negation"
+  },
+  {
+    "id": "q09",
+    "tenant": "aurora",
+    "query": "续订前至少要提前多少小时取消才能避免扣费？",
+    "relevant": [
+      {
+        "doc_id": "subscription",
+        "evidence": "Aurora members must cancel at least 48 hours before renewal to prevent the next charge."
+      }
+    ],
+    "category": "cross_language"
+  },
+  {
+    "id": "q10",
+    "tenant": "cedar",
+    "query": "续订前至少要提前多少小时取消才能避免扣费？",
+    "relevant": [
+      {
+        "doc_id": "subscription",
+        "evidence": "Cedar members must cancel at least 72 hours before renewal to prevent the next charge."
+      }
+    ],
+    "category": "cross_language"
+  },
+  {
+    "id": "q11",
+    "tenant": "aurora",
+    "query": "When can I reach a human through chat?",
+    "relevant": [
+      {
+        "doc_id": "support",
+        "evidence": "Aurora live chat operates Monday to Friday, 09:00–17:00 UTC."
+      }
+    ],
+    "category": "paraphrase"
+  },
+  {
+    "id": "q12",
+    "tenant": "cedar",
+    "query": "When can I reach a human through chat?",
+    "relevant": [
+      {
+        "doc_id": "support",
+        "evidence": "Cedar live chat operates Tuesday to Saturday, 12:00–20:00 UTC."
+      }
+    ],
+    "category": "paraphrase"
+  },
+  {
+    "id": "q13",
+    "tenant": "aurora",
+    "query": "Can I get a refund for a digital pattern I already downloaded?",
+    "relevant": [
+      {
+        "doc_id": "refunds",
+        "evidence": "Aurora does not refund downloaded digital patterns."
+      }
+    ],
+    "category": "negation"
+  },
+  {
+    "id": "q14",
+    "tenant": "cedar",
+    "query": "Can I get a refund for a digital pattern I already downloaded?",
+    "relevant": [
+      {
+        "doc_id": "refunds",
+        "evidence": "Cedar refunds downloaded digital patterns only if the file is corrupted."
+      }
+    ],
+    "category": "negation"
+  },
+  {
+    "id": "q15",
+    "tenant": "aurora",
+    "query": "What is the ingredient list for your strawberry cake?",
+    "relevant": [],
+    "category": "out_of_scope"
+  },
+  {
+    "id": "q16",
+    "tenant": "cedar",
+    "query": "你们的草莓蛋糕包含哪些原料？",
+    "relevant": [],
+    "category": "out_of_scope"
+  }
+]

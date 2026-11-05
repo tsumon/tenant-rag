@@ -1,0 +1,75 @@
+{
+  "repository": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+  "license": "apache-2.0",
+  "files": {
+    "1_Pooling/config.json": {
+      "blobId": "d1514c3162bbe87b343f565fadc62e6c06f04f03",
+      "size": 190
+    },
+    "README.md": {
+      "blobId": "6bedb7f3622d56b7020f33ab93f6996d33242043",
+      "size": 3888
+    },
+    "config.json": {
+      "blobId": "c06d5b49495f044e6380e68a60538be17a6bd5d1",
+      "size": 645
+    },
+    "config_sentence_transformers.json": {
+      "blobId": "b974b349cb2d419ada11181750a733ff82f291ad",
+      "size": 122
+    },
+    "model.safetensors": {
+      "blobId": "295bf8c5f879ae1c9b51986a824e4c0f70d9eb42",
+      "size": 470641600,
+      "lfs": {
+        "sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b",
+        "size": 470641600,
+        "pointerSize": 134
+      }
+    },
+    "modules.json": {
+      "blobId": "f7640f94e81bb7f4f04daf1668850b38763a13d9",
+      "size": 229
+    },
+    "sentence_bert_config.json": {
+      "blobId": "5fd10429389515d3e5cccdeda08cae5fea1ae82e",
+      "size": 53
+    },
+    "sentencepiece.bpe.model": {
+      "blobId": "7a3f40a75f870bc1f21700cd414dc2acc431583c",
+      "size": 5069051,
+      "lfs": {
+        "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865",
+        "size": 5069051,
+        "pointerSize": 132
+      }
+    },
+    "special_tokens_map.json": {
+      "blobId": "2ea7ad0e45a9d1d1591782ba7e29a703d0758831",
+      "size": 239
+    },
+    "tokenizer.json": {
+      "blobId": "c8feb62b21a4f391c3e71d1e37218c14f19e88d2",
+      "size": 9081518,
+      "lfs": {
+        "sha256": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+        "size": 9081518,
+        "pointerSize": 132
+      }
+    },
+    "tokenizer_config.json": {
+      "blobId": "3c1b565ae10a15a1d0c31096f834af2fd9359e91",
+      "size": 526
+    },
+    "unigram.json": {
+      "blobId": "81c58e044763c1fa21b08726c8ddebf35cc9be4a",
+      "size": 14763234,
+      "lfs": {
+        "sha256": "71b44701d7efd054205115acfa6ef126c5d2f84bd3affe0c59e48163674d19a6",
+        "size": 14763234,
+        "pointerSize": 133
+      }
+    }
+  }
+}

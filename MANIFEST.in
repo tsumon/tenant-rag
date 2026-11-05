@@ -4,3 +4,16 @@ recursive-include eval *.py *.json *.jsonl *.md *.txt *.zip
 recursive-include demo *.py
 recursive-include tests *.py
 recursive-include scripts *.py
+# Reproducible trial source and compact evidence only, never downloaded runtimes.
+include examples/local_trial/LICENSE examples/local_trial/.gitignore examples/local_trial/data/SHA256SUMS
+recursive-include examples/local_trial *.py *.md *.json *.jsonl *.txt
+recursive-exclude examples/local_trial *.whl *.safetensors *.bin *.pt *.pth *.db *.sqlite *.sqlite3 *.pyc
+prune examples/local_trial/.venv
+prune examples/local_trial/venv
+prune examples/local_trial/models
+prune examples/local_trial/model
+prune examples/local_trial/downloads
+prune examples/local_trial/.cache
+prune examples/local_trial/wheel
+prune examples/local_trial/output
+prune examples/local_trial/.runtime
