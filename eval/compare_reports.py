@@ -4,18 +4,81 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 from pathlib import Path
 import sys
 
 MODES = ("hybrid", "vector", "fts")
 METRICS = ("recall_at_k", "mrr_at_k")
+IMPLEMENTATION_FILES = frozenset({
+    "eval/run_eval.py", "eval/local_embedder.py", "tenantrag/search.py",
+    "tenantrag/embed.py", "tenantrag/store.py", "tenantrag/service.py",
+    "tenantrag/identity.py", "tenantrag/chunking.py",
+})
+
+
+def _sha256(value):
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+
+
+def _metadata(report):
+    fingerprints = report["implementation_sha256"]
+    if (not isinstance(fingerprints, dict) or set(fingerprints) != IMPLEMENTATION_FILES
+            or not all(_sha256(value) for value in fingerprints.values())):
+        raise ValueError("report requires complete valid implementation fingerprints")
+    for key in ("python_version", "sqlite_version"):
+        if not isinstance(report.get(key), str) or not report[key].strip():
+            raise ValueError("report requires non-empty Python and SQLite runtime versions")
+    if type(report["candidates_per_channel"]) is not int or report["candidates_per_channel"] < 1:
+        raise ValueError("report requires a positive candidate limit")
+    backend = report["backend"]
+    if (not isinstance(backend, dict) or backend.get("name") not in ("fake", "openai", "local")
+            or any(not isinstance(backend.get(key), str) or not backend[key].strip()
+                   for key in ("model", "revision"))
+            or type(backend.get("dimensions")) is not int or backend["dimensions"] < 1
+            or "endpoint_sha256" not in backend
+            or (backend["endpoint_sha256"] is not None and not _sha256(backend["endpoint_sha256"]))):
+        raise ValueError("report requires complete backend identity metadata")
+    if backend["name"] == "openai" and not _sha256(backend["endpoint_sha256"]):
+        raise ValueError("provider report requires an endpoint fingerprint")
+    if backend["name"] == "local":
+        files, versions, settings = backend["model_files"], backend["runtime_versions"], backend["settings"]
+        packages = {'sentence-transformers', 'transformers', 'torch', 'tokenizers', 'safetensors', 'numpy'}
+        setting_keys = {'device', 'normalize_embeddings', 'batch_size', 'prompt', 'max_seq_length',
+                        'local_files_only', 'trust_remote_code', 'weights_format'}
+        if (not isinstance(files, dict) or not _sha256(files.get("sha256"))
+                or type(files.get("file_count")) is not int or files["file_count"] < 1
+                or backend["revision"] != files["sha256"]
+                or not isinstance(versions, dict) or not packages <= versions.keys()
+                or any(not isinstance(value, str) or not value.strip() for value in versions.values())
+                or not isinstance(settings, dict) or not setting_keys <= settings.keys()
+                or not isinstance(settings['device'], str) or not settings['device'].strip()
+                or not isinstance(settings['prompt'], str)
+                or not isinstance(settings['weights_format'], str) or not settings['weights_format'].strip()
+                or any(type(settings[key]) is not bool for key in ('normalize_embeddings', 'local_files_only', 'trust_remote_code'))
+                or any(type(settings[key]) is not int or settings[key] < 1 for key in ('batch_size', 'max_seq_length'))):
+            raise ValueError("local report requires snapshot, runtime and model settings")
+    retrieval = report["retrieval"]
+    if (not isinstance(retrieval, dict)
+            or not {"fusion", "lexical_weight", "rrf_k", "positive_cosine_only", "chunking"} <= retrieval.keys()
+            or type(retrieval["positive_cosine_only"]) is not bool or type(retrieval["chunking"]) is not bool):
+        raise ValueError("report requires complete retrieval settings")
+    fusion, weight, rrf_k = retrieval['fusion'], retrieval['lexical_weight'], retrieval['rrf_k']
+    if fusion == 'rrf':
+        if weight is not None or type(rrf_k) is not int or rrf_k < 1:
+            raise ValueError("invalid RRF retrieval settings")
+    elif fusion == 'score':
+        if rrf_k is not None or type(weight) not in (int, float) or not 0 <= weight <= 1 or not math.isfinite(weight):
+            raise ValueError("invalid score retrieval settings")
+    else:
+        raise ValueError("unsupported report fusion mode")
 
 
 def _metrics(value):
     for mode in MODES:
         for name in METRICS:
             score = value[mode][name]
-            if type(score) not in (int, float) or not math.isfinite(score) or not 0 <= score <= 1:
+            if type(score) not in (int, float) or not 0 <= score <= 1 or not math.isfinite(score):
                 raise ValueError("report metrics must be finite numbers between zero and one")
 
 
@@ -65,8 +128,9 @@ def compare_reports(baseline, candidate, *, allow_fusion_change=False):
             if report["schema_version"] != 2:
                 raise ValueError("comparison requires schema-version 2 reports")
             for key in ("sha256", "selected_records_sha256"):
-                if not isinstance(report["dataset"][key], str) or len(report["dataset"][key]) != 64:
+                if not _sha256(report["dataset"][key]):
                     raise ValueError("report is missing a dataset fingerprint")
+            _metadata(report)
             if not report["queries"] or not report["implementation_sha256"]:
                 raise ValueError("report must contain queries and implementation fingerprints")
             if len({q["id"] for q in report["queries"]}) != len(report["queries"]):
@@ -107,7 +171,7 @@ def compare_reports(baseline, candidate, *, allow_fusion_change=False):
                 for mode in ('vector', 'fts'):
                     before = left.get('candidate_sha256', {}).get(mode)
                     after = right.get('candidate_sha256', {}).get(mode)
-                    if not isinstance(before, str) or len(before) != 64 or before != after:
+                    if not _sha256(before) or before != after:
                         raise ValueError('fusion comparisons require identical full vector/FTS candidate fingerprints')
                     if left['ranked'][mode] != right['ranked'][mode]:
                         raise ValueError('fusion comparison control-channel rankings differ')
@@ -128,8 +192,8 @@ def compare_reports(baseline, candidate, *, allow_fusion_change=False):
                 "baseline_backend": baseline["backend"], "candidate_backend": candidate["backend"],
                 "runtime_changes": runtime_changes, "suite_deltas": suites,
                 "changed_queries": changes, "unchanged_metric_queries": len(old) - len(changes),
-                "note": "Deltas are candidate minus baseline. Zero means equal metrics, not necessarily equal rankings. Synthetic cases only; no significance or superiority claim. Backend runtime/settings are included for review."}
-    except (KeyError, TypeError, AttributeError):
+                "note": "Deltas are candidate minus baseline. Zero means equal metrics, not necessarily equal rankings. Selected evaluation cases only; no significance or superiority claim. Backend runtime/settings are included for review."}
+    except (KeyError, TypeError, AttributeError, OverflowError):
         raise ValueError("incomplete or malformed evaluation report") from None
 
 

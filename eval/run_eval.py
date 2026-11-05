@@ -218,7 +218,7 @@ def _print_report(report):
           f"embedder={backend['name']}, model={backend['model']}")
     print("Semantic quality: " + report["semantic_quality"])
     print(f"Fusion: {report['retrieval']['fusion']}; lexical weight: {report['retrieval']['lexical_weight']}")
-    print("Synthetic fixtures only. No production-quality or hybrid-superiority claim.")
+    print("Selected evaluation cases only. No production-quality or hybrid-superiority claim.")
     for name, suite in report["suites"].items():
         label = "offline diagnostic only" if name == "semantic" and backend["name"] == "fake" else "measured"
         print(f"\n{name}: {suite['queries']} queries ({label})")
@@ -338,7 +338,7 @@ def main(argv=None):
         "semantic_quality": (
             "unverified (offline lexical embedder)" if args.embedder == "fake" else
             "unverified (semantic suite not evaluated)" if "semantic" not in report["suites"] else
-            "measured on synthetic cases only; production quality unverified"
+            "measured on selected evaluation cases; production quality unverified"
         ),
     })
     gate_metrics = report["suites"][args.gate_suite]["metrics"]["hybrid"]

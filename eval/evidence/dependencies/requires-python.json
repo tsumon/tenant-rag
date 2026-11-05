@@ -1,0 +1,212 @@
+[
+  {
+    "name": "annotated-doc",
+    "version": "0.0.5",
+    "requires_python": ">=3.9"
+  },
+  {
+    "name": "anyio",
+    "version": "4.16.0",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "certifi",
+    "version": "2026.10.23",
+    "requires_python": ">=3.7"
+  },
+  {
+    "name": "click",
+    "version": "8.5.0",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "cloudpickle",
+    "version": "3.1.2",
+    "requires_python": ">=3.8"
+  },
+  {
+    "name": "filelock",
+    "version": "4.2.4",
+    "requires_python": ">=3.11"
+  },
+  {
+    "name": "fsspec",
+    "version": "2026.9.0",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "h11",
+    "version": "0.16.0",
+    "requires_python": ">=3.8"
+  },
+  {
+    "name": "hf-xet",
+    "version": "1.8.0",
+    "requires_python": ">=3.8"
+  },
+  {
+    "name": "httpcore",
+    "version": "1.0.9",
+    "requires_python": ">=3.8"
+  },
+  {
+    "name": "httpx",
+    "version": "0.28.1",
+    "requires_python": ">=3.8"
+  },
+  {
+    "name": "huggingface_hub",
+    "version": "1.33.0",
+    "requires_python": ">=3.10.0"
+  },
+  {
+    "name": "idna",
+    "version": "3.20",
+    "requires_python": ">=3.9"
+  },
+  {
+    "name": "Jinja2",
+    "version": "3.1.6",
+    "requires_python": ">=3.7"
+  },
+  {
+    "name": "joblib",
+    "version": "1.6.0",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "markdown-it-py",
+    "version": "4.2.0",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "MarkupSafe",
+    "version": "3.0.3",
+    "requires_python": ">=3.9"
+  },
+  {
+    "name": "mdurl",
+    "version": "0.1.2",
+    "requires_python": ">=3.7"
+  },
+  {
+    "name": "mpmath",
+    "version": "1.3.0",
+    "requires_python": null
+  },
+  {
+    "name": "narwhals",
+    "version": "2.28.0",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "networkx",
+    "version": "3.7",
+    "requires_python": "!=3.14.1,>=3.12"
+  },
+  {
+    "name": "numpy",
+    "version": "2.5.4",
+    "requires_python": ">=3.12"
+  },
+  {
+    "name": "packaging",
+    "version": "26.3",
+    "requires_python": ">=3.9"
+  },
+  {
+    "name": "pip",
+    "version": "26.3",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "Pygments",
+    "version": "2.21.0",
+    "requires_python": ">=3.9"
+  },
+  {
+    "name": "PyYAML",
+    "version": "6.0.3",
+    "requires_python": ">=3.8"
+  },
+  {
+    "name": "regex",
+    "version": "2026.9.29",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "rich",
+    "version": "15.0.0",
+    "requires_python": ">=3.9.0"
+  },
+  {
+    "name": "safetensors",
+    "version": "0.8.0",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "scikit-learn",
+    "version": "1.9.1",
+    "requires_python": ">=3.11"
+  },
+  {
+    "name": "scipy",
+    "version": "1.18.1",
+    "requires_python": ">=3.12"
+  },
+  {
+    "name": "sentence-transformers",
+    "version": "5.6.0",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "setuptools",
+    "version": "84.2.1",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "shellingham",
+    "version": "1.5.4",
+    "requires_python": ">=3.7"
+  },
+  {
+    "name": "sympy",
+    "version": "1.14.0",
+    "requires_python": ">=3.9"
+  },
+  {
+    "name": "threadpoolctl",
+    "version": "3.7.0",
+    "requires_python": ">=3.9"
+  },
+  {
+    "name": "tokenizers",
+    "version": "0.22.2",
+    "requires_python": ">=3.9"
+  },
+  {
+    "name": "torch",
+    "version": "2.13.0+cpu",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "tqdm",
+    "version": "4.70.1",
+    "requires_python": ">=3.8"
+  },
+  {
+    "name": "transformers",
+    "version": "5.13.0",
+    "requires_python": ">=3.10.0"
+  },
+  {
+    "name": "typer",
+    "version": "0.27.3",
+    "requires_python": ">=3.10"
+  },
+  {
+    "name": "typing_extensions",
+    "version": "4.16.0",
+    "requires_python": ">=3.9"
+  }
+]

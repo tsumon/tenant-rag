@@ -1,0 +1,17 @@
+{
+  "version": "public-retrieval-v1",
+  "declared_before_retrieval": true,
+  "declared_at_utc": "2026-11-05T10:19:45Z",
+  "english": {"dataset": "BeIR/scifact", "split": "test", "queries": "all test qrels query IDs", "corpus": "all 5183 documents"},
+  "chinese": {
+    "dataset": "C-MTEB/T2Retrieval",
+    "split": "dev",
+    "query_selection": "First 128 query IDs ordered by SHA256 of UTF-8 string public-retrieval-v1:query: followed by unmodified original query ID; ties by original ID",
+    "corpus_selection": "Union of all documents with any published qrel for a selected query and first 2048 remaining documents ordered by SHA256 of UTF-8 string public-retrieval-v1:distractor: followed by original document ID; ties by original ID",
+    "qrels": "Preserve all published grades for selected queries. Evaluator expected set includes score > 0 only.",
+    "limitations": "Reduced corpus and query subset; neither official full C-MTEB score nor broad Chinese release certification. No inferred negative labels."
+  },
+  "text_policy": "Unmodified source text; English nonempty title is prepended with one newline. No generated content, paraphrase, numeric substitutions or label additions.",
+  "descriptive_tags": {"query_numeric": "ASCII digit occurs in original query", "relevant_doc_long": "At least one positive-qrel source document after title prepend has >= 2000 Unicode code points", "relevant_doc_numeric": "ASCII digit occurs in at least one positive-qrel source document"},
+  "frozen_retrieval": {"baseline": "RRF", "vector_candidates": "positive cosine only", "opt_in_score_lexical_weight": 0.2, "tuning": "none on this dataset"}
+}

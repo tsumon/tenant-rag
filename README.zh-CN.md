@@ -28,7 +28,9 @@
 
 这是**检索组件**，不是完整知识库业务产品，也不是托管 SaaS。它不负责回答生成、PDF 解析、用户账号、租户内文档权限或分布式存储。订阅管家示例用模板回答演示检索，不是大模型 Agent 平台。
 
-## 安装 v0.4.0
+本分支正在准备 **v0.5.0**，新增 score 融合及本地评测不在已发布的 v0.4.0 wheel 中。试用需构建本分支，正式发布需另行批准。参见[升级说明](docs/V0.5.md)。
+
+## 安装已发布的 v0.4.0
 
 从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.4.0-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
 
@@ -172,3 +174,5 @@ FTS 表含未索引的 tenant_id 列，查询显式过滤。查询文字先分�
 ## License
 
 [MIT](LICENSE)。
+
+公开数据补测中，score 在英语 SciFact 和中文 T2 子集的召回均低于 RRF，保持实验性可选模式，不替换默认策略。长文截断、数字条件与成本见[完整评测说明](eval/public-study/README.md)。

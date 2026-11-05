@@ -1,8 +1,22 @@
 # Release checklist
 
+## Current candidate: 0.5.0 (unreleased)
+
+Keep this PR in draft until the exact candidate passes review and CI. Prepare
+wheel/sdist/checksums locally, but do not tag, merge, publish or deploy without
+explicit authorization. Do not introduce a merge-triggered publication workflow.
+The existing 0.3/0.4 workflows are historical and must not be edited to publish
+this candidate. Use an explicitly approved, separate publication step.
+
+Before publication, verify [0.5 compatibility](V0.5.md), [CHANGELOG](../CHANGELOG.md),
+current optional-dependency advisories, retained public-data source/license
+receipts, actual model/runtime limits, and the final exact-SHA CI results.
+
+## Released version
+
 Version 0.4.0 is distributed through [GitHub Releases](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0), with wheel, source distribution, offline evaluation report and SHA-256 checksums. The release workflow tests Python 3.10–3.14 and smoke-tests installed distributions before publication. This is not a PyPI publication or a deployed service.
 
-Known validation gaps remain: full browser interaction QA, real-provider quality, production load and adversarial security audit. HTTP/admin proxy smoke tests do not replace browser QA.
+Known validation gaps remain: full browser interaction QA, representative production quality, production load and adversarial security audit. HTTP/admin proxy smoke tests do not replace browser QA.
 
 ## Local gates
 

@@ -75,8 +75,9 @@ Model IDs are never resolved or downloaded by this runner. Adapter/PEFT models,
 external tokenizer paths and shards outside the snapshot are rejected. The
 adapter explicitly constructs known modules with offline parameters instead of
 using the generic model loader's fallback paths. Optional Sentence Transformers
-is pinned to 3.4.1, whose loader API was inspected; dependency integration still
-requires an actual model run. Only `max_seq_length` and `do_lower_case` are
+is pinned to 5.6.0 with Transformers 5.13.0 and torch 2.13.0. The fixed
+multilingual MiniLM snapshot was actually run on the documented Linux/Python
+3.12 CPU environment; other model/runtime combinations need their own check. Only `max_seq_length` and `do_lower_case` are
 accepted in the saved Transformer module configuration.
 
 ```sh
@@ -284,3 +285,19 @@ endpoint in your private run configuration. A declared revision is not provider
 attestation, and the default `unspecified` cannot detect silent alias changes. Compare failures
 and tag slices alongside averages. Choose thresholds before the final holdout
 run. Offline fixtures and this entry point do **not** establish real-model quality.
+
+
+## Release candidate model environment and public data
+
+The 0.5 candidate pins Sentence Transformers 5.6.0, Transformers 5.13.0 and
+PyTorch 2.13.0. The verified CPU dependency lock is specifically Linux/Python
+3.12, not the full core-library Python matrix. Install CPU torch from the
+official PyTorch index before the local-eval extra to avoid unintentionally
+selecting a different accelerator distribution. See
+[dependency/advisory evidence](evidence/dependencies/README.md).
+
+[Public retrieval study](public-study/README.md) provides pinned public data
+acquisition, original-label validation, fixed-strategy evaluation and observed
+costs. Public passages and model weights are not bundled in the package.
+[Retained synthetic evidence](evidence/README.md) is a consumed regression set,
+not a fresh validation set for later tuning.

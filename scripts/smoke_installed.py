@@ -29,6 +29,8 @@ with tempfile.TemporaryDirectory() as tmp:
             assert b'btn-upload' in response.read()
         assert request('POST','/v1/index',{'doc_id':'d','text':'release smoke test'})['doc_id']=='d'
         assert request('POST','/v1/search',{'query':'release'})['hits'][0]['doc_id']=='d'
+        for weight in (0,0.2):
+            assert request('POST','/v1/search',{'query':'release','fusion':'score','lexical_weight':weight})['hits'][0]['doc_id']=='d'
         assert request('GET','/v1/docs')['docs'][0]['doc_id']=='d'
         assert request('DELETE','/v1/docs/d')['deleted']
         assert request('GET','/v1/usage')['docs']==0

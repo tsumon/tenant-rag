@@ -1,0 +1,24 @@
+{
+  "archive": "release-model-results.zip",
+  "bytes": 160566,
+  "sha256": "0b837e79fd1058f674ba6e3a09590546f8f59cbcbfe0b509dc6c3e7228f59d2c",
+  "files": {
+    "patched-synthetic/golden-rrf.json": "a6f4d0bd1360768aa61c2eaa3ec6efc5e1f9fdf131c27f4bf08965d6d9df7146",
+    "patched-synthetic/golden-score.json": "4bd2efa263edd2e3a0c3d0f7e76070851986c06a63b909cf5d8c83146f319b57",
+    "patched-synthetic/holdout-rrf.json": "8af4ff6a4d498c2ad3b5a636db0594ccd3585355de5699426861c0416ac34500",
+    "patched-synthetic/holdout-score.json": "785b6d59636847329d1e9b7f83534ca1180df54fa10e76038948ac52e2c699e3",
+    "patched-synthetic/operations-rrf.json": "0562da021889d9901341f2df80975555ee0f6e0d2e4d76bcd928f4192cac01cb",
+    "patched-synthetic/operations-score.json": "cfa1c8cf9268c3d835001df910e16c62fe987e68740cfc32eaa568875aa7b997",
+    "public-verification-26.json": "0c0ff2352dcf79aa158fc3ef12c5c329b914887a1ec6cad5463773313489648e",
+    "scifact/analysis.json": "8ac3d881d70326ecb14b21c20560a98e0e83a7f07698489394c43b9dcb33087c",
+    "scifact/cost.json": "685c7c2d9785e8b1619279ca933e70cd262a6846bd3778beff001f0d22377cb8",
+    "scifact/report.json": "8f831b26fbd5f42b0f447e6e1022ee3a2c7a09b1890320e3d1c4bf1a08c42f3b",
+    "scifact/token-lengths.json": "6fcc0dac8b813f0bac0301d0b3d54c85674dbb41d4185826adf0f87ca804538d",
+    "single-query-cost.json": "431ccc9ac11a882a968c49baddff0718f1cea4b7b19c447c1162fd3309580ce3",
+    "t2/analysis.json": "0b8aaacdb7b0335ee504c95e29263702362127f475b6122390671ec2ac30fc58",
+    "t2/cost.json": "66d024af127ccbb32be881e895dcb88bea446341a0108c95260cec42662fa422",
+    "t2/report.json": "6e5c50aa218c8a6e76fc2d682b7f5971666cf4942d5425cbeccac35c9ffe363e",
+    "t2/token-lengths.json": "8760e5eb22a9dbe5daa92dbfceedfd3b9a34037edd5713a11a4f6d63244f2910"
+  },
+  "note": "Public source texts/model weights not included. Original IDs, rankings, labels, metrics, token lengths and observed costs retained. Patched-stack synthetic runs are regressions on a consumed fixture, not fresh blind tests."
+}

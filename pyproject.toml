@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools==84.2.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "tenant-rag"
-version = "0.4.0"
+version = "0.5.0"
 description = "SQLite-backed tenant-scoped hybrid retrieval for small AI applications"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,7 +15,7 @@ dependencies = []
 classifiers = ["Programming Language :: Python :: 3", "Operating System :: OS Independent"]
 
 [project.optional-dependencies]
-local-eval = ["sentence-transformers==3.4.1"]
+local-eval = ["sentence-transformers==5.6.0", "transformers==5.13.0", "torch==2.13.0"]
 
 [project.urls]
 Repository = "https://github.com/tsumon/tenant-rag"
