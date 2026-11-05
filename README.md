@@ -29,13 +29,12 @@ Small, tenant-scoped hybrid retrieval for personal AI applications.
 
 This is a **retrieval component**, not a complete knowledge-base product or hosted SaaS. It does not generate answers, parse PDFs, manage user accounts, enforce document ACLs inside a tenant, or provide distributed storage. The included subscription agent demonstrates retrieval with templated answers, not an LLM agent platform.
 
-This branch prepares **v0.5.0**. The score-fusion/local-evaluation additions are
-not in the released v0.4.0 wheel. Build this checkout to try them, or wait for an
-explicitly published release. See [upgrade notes](docs/V0.5.md).
+**v0.5.0** adds opt-in experimental score fusion and reproducible local evaluation.
+RRF remains the default. See [upgrade notes](docs/V0.5.md).
 
-## Install the released v0.4.0
+## Install v0.5.0
 
-Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.4.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
+Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.0), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.5.0-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
 
 ## Install from source
 

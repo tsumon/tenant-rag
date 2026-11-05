@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0 (unreleased)
+## 0.5.0 (2026-11-05)
 
 - Add explicitly selected cosine-score/keyword-rank fusion in SDK, HTTP and
   evaluation tools, preserving the default RRF behavior and tenant checks.

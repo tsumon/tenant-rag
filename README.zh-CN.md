@@ -28,11 +28,11 @@
 
 这是**检索组件**，不是完整知识库业务产品，也不是托管 SaaS。它不负责回答生成、PDF 解析、用户账号、租户内文档权限或分布式存储。订阅管家示例用模板回答演示检索，不是大模型 Agent 平台。
 
-本分支正在准备 **v0.5.0**，新增 score 融合及本地评测不在已发布的 v0.4.0 wheel 中。试用需构建本分支，正式发布需另行批准。参见[升级说明](docs/V0.5.md)。
+**v0.5.0** 新增显式启用的实验性 score 融合及可复现本地评测，默认仍为 RRF。参见[升级说明](docs/V0.5.md)。
 
-## 安装已发布的 v0.4.0
+## 安装 v0.5.0
 
-从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.4.0) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.4.0-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
+从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.0) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.5.0-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
 
 ## 从源码安装
 
