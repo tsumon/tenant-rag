@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/tsumon/tenant-rag/ci.yml?branch=main&label=CI" alt="CI"></a>
-  <img src="https://img.shields.io/badge/version-0.6.0-2563EB" alt="Version 0.6.0">
+  <a href="https://github.com/tsumon/tenant-rag/releases/tag/v0.6.0"><img src="https://img.shields.io/badge/version-0.6.0-2563EB" alt="Version 0.6.0"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/核心运行时依赖-0-10B981" alt="核心运行时依赖: 0">
   <img src="https://img.shields.io/badge/隔离模型-逻辑隔离_%2B_物理分库_WAL-0EA5E9" alt="隔离模型">
@@ -18,6 +18,7 @@
 
 <p align="center">
   <a href="README.md">English</a> ·
+  <a href="https://github.com/tsumon/tenant-rag/releases/tag/v0.6.0">GitHub Releases (v0.6.0)</a> ·
   <a href="#30-秒启动企业工作台">企业版快速上手</a> ·
   <a href="#控制台界面预览">控制台预览</a> ·
   <a href="#架构与两阶段检索流水线">架构设计</a> ·

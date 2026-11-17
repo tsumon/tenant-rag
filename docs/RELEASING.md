@@ -1,5 +1,14 @@
 # Release checklist
 
+## Version 0.6.0 publication
+
+The maintainer authorized the v0.6.0 Enterprise Dual-Mode release and GitHub Release publication via `.github/workflows/release-0.6.0.yml` (historical `release-0.3.0.yml` through `release-0.5.1.yml` workflows remain untouched).
+
+- Core `dependencies = []` and existing SQLite schemas remain unchanged; classic `smoke_installed.py` and `smoke_v04.py` gates continue to pass across Python 3.10–3.14.
+- Wheel and source distributions additionally bundle compiled `tenantrag/enterprise/static/` React 19 UI assets and stdlib enterprise modules (`ControlPlane`, `TenantPool`, `EnterpriseTenantRAG`), while optional `[enterprise]` runtime packages (`fastapi`, `uvicorn`, `pypdf`, etc.) remain opt-in extras.
+- Follows the six-asset release verification contract (`tenant_rag-0.6.0-py3-none-any.whl`, `tenant_rag-0.6.0.tar.gz`, `offline-eval.json`, `evidence-verification.txt`, `SOURCE_COMMIT.txt`, `SHA256SUMS`): `python scripts/verify_release_download.py DOWNLOAD_DIR FULL_COMMIT_SHA 0.6.0`.
+- See [0.6.0 release notes](RELEASE_0.6.0.md) and [enterprise architecture specification](ENTERPRISE_ARCHITECTURE.zh-CN.md).
+
 ## Version 0.5.1 publication
 
 The maintainer authorized this patch's bilingual local trial, CI, merge and GitHub
