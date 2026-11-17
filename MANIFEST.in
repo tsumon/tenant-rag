@@ -8,6 +8,8 @@ recursive-include tenantrag/enterprise/static *
 prune web/node_modules
 prune web/dist
 prune enterprise_data
+prune assets
+prune docs/media
 # Reproducible trial source and compact evidence only, never downloaded runtimes.
 include examples/local_trial/LICENSE examples/local_trial/.gitignore examples/local_trial/data/SHA256SUMS
 recursive-include examples/local_trial *.py *.md *.json *.jsonl *.txt

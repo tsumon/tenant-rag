@@ -1,204 +1,262 @@
-<div align="center">
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="tenant-rag v0.6.0：零依赖嵌入式内核 + 企业级物理隔离多租户 RAG 平台">
+</p>
 
-# tenant-rag
+<p align="center">
+  <a href="https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/tsumon/tenant-rag/ci.yml?branch=main&label=CI" alt="CI"></a>
+  <img src="https://img.shields.io/badge/version-0.6.0-2563EB" alt="Version 0.6.0">
+  <img src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/核心运行时依赖-0-10B981" alt="核心运行时依赖: 0">
+  <img src="https://img.shields.io/badge/隔离模型-逻辑隔离_%2B_物理分库_WAL-0EA5E9" alt="隔离模型">
+  <img src="https://img.shields.io/badge/控制台-React_19_%2B_TS-61DAFB?logo=react&logoColor=black" alt="控制台">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F59E0B" alt="MIT License"></a>
+</p>
 
-**每个用户的数据，只出现在自己的检索结果里。**
+<p align="center">
+  <strong>每个租户的数据，严格隔离在自己的检索空间——从零依赖单文件 SQLite 内核到物理分库的企业生产级 RAG 平台。</strong>
+</p>
 
-面向个人 AI 应用的轻量多租户混合检索组件：一个 SQLite 数据库，零第三方运行时依赖。
+<p align="center">
+  <a href="README.md">English</a> ·
+  <a href="#30-秒启动企业工作台">企业版快速上手</a> ·
+  <a href="#控制台界面预览">控制台预览</a> ·
+  <a href="#架构与两阶段检索流水线">架构设计</a> ·
+  <a href="#http-接口总览">接口文档</a> ·
+  <a href="docs/ENTERPRISE_ARCHITECTURE.zh-CN.md">企业架构详情</a> ·
+  <a href="docs/FUSION.md">融合评测研究</a> ·
+  <a href="docs/RELEASING.md">发布清单</a>
+</p>
 
-[![CI](https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml)
-![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
-[![MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
+---
 
-[English](README.md) · [发布检查清单](docs/RELEASING.md)
+## 双模架构定位：轻量内核 + 企业级生产层
 
-</div>
+`tenant-rag` 在演进到 **v0.6.0** 时严格保持**双模边界**：嵌入式应用依然可以零第三方依赖直接集成核心库，同时为真实企业生产提供物理隔离、多租户 IAM、权限预过滤、重排拒答与可视化工作台：
 
-> **v0.4**：新增模型身份校验、原子重建索引、文本/Markdown 增量导入。旧数据库需显式确认原模型身份或重建索引；升级前请阅读 [升级与导入指南](docs/V0.4.md)。
+| 维度 | 零依赖核心模式（`pip install .`） | 企业真实生产模式（`pip install ".[enterprise]"`） |
+|---|---|---|
+| **运行时依赖** | **0 第三方依赖**（Python 3.10+ 标准库 + SQLite FTS5） | FastAPI、Uvicorn、Pydantic、`python-multipart`、`pypdf` |
+| **租户隔离级别** | 单 SQLite 文件内按 `tenant_id` 强制逻辑过滤 | **物理分库连接池**（`tenants/<tid>/index.db` WAL）+ 并发只读池 + `VectorCache` |
+| **IAM 与密钥管理** | 静态单 Key SHA-256 映射 | 独立控制面数据库、Scoped Key（`read`/`write`/`chat`/`eval`/`tenant_admin`）、TTL 过期、**零停机轮换**、租户启停熔断 |
+| **检索与重排管线** | 余弦向量 + FTS5 trigram + RRF / 可选 Score 融合 | **召回前 Metadata DSL + `_acl` 角色过滤** → 双路融合 → **二阶段 Reranker** → 父子上下文展开 → **无答案拒答门控** |
+| **文档解析管线** | 同步 `index()` 与 `ingest()`（文本 / Markdown） | `.pdf`、`.docx`、`.html`、`.csv`/`.tsv`、`.json`/`.jsonl`、`.md`、`.txt` + **异步任务队列进度追踪** |
+| **问答与评测** | 返回片段与 `_chunk` 字符偏移 | **SSE 流式 Grounded 问答**（带 `[n]` 原文偏移角标，支持 OpenAI 兼容模型与离线抽取式合成）+ 在线 5 路策略评测 |
+| **运维与控制台** | `tenant-rag` + 单文件本地 HTML 管理页 | `tenant-rag-enterprise` + **React 19 企业双视角工作台** + SHA-256 审计哈希链 + 在线热备恢复 + `/metrics` |
 
-## 能做什么
+---
 
-- **混合检索**：余弦向量检索 + FTS5 trigram 关键词检索，通过 RRF 融合排名。
-- **租户逻辑隔离**：API key 解析成租户身份，索引、查询、删除、配额和用量均按租户过滤；不同租户可以使用相同文档 ID。
-- **轻量存储**：SQLite + Python 标准库，适合个人级语料，不需要单独部署向量数据库。
-- **可直接使用**：Python API、Bearer 鉴权 HTTP API、本地浏览器管理界面。
-- **显式长文档导入**：确定性文本/Markdown 切块、来源偏移、父文档原子更新、批量增量向量复用。
-- **模型安全**：保存模型身份和维度，旧数据明确确认来源或全库原子重建，防止同维度模型混用。
-- **离线回归门禁**：隔离、迁移回滚、并发配额、错误请求与检索管线测试。
+## 控制台界面预览
 
-这是**检索组件**，不是完整知识库业务产品，也不是托管 SaaS。它不负责回答生成、PDF 解析、用户账号、租户内文档权限或分布式存储。订阅管家示例用模板回答演示检索，不是大模型 Agent 平台。
+<p align="center">
+  <img src="./docs/media/grounded-chat.png" width="100%" alt="带行内 [1] 引用溯源角标与原文偏移高亮抽屉的 SSE 流式问答台">
+</p>
 
-**v0.5.0** 新增显式启用的实验性 score 融合及可复现本地评测，默认仍为 RRF。参见[升级说明](docs/V0.5.md)。
+<table width="100%">
+  <tr>
+    <td width="50%" valign="top">
+      <img src="./docs/media/admin-overview.png" width="100%" alt="平台超管全局运行大盘：租户物理分库配额、热备数、P95 延迟与限流统计">
+      <p align="center"><sub><b>平台超管 · 全局运行大盘</b>：各物理分库容量、P95 延迟、热备计数与 Prometheus <code>/metrics</code></sub></p>
+    </td>
+    <td width="50%" valign="top">
+      <img src="./docs/media/retrieval-debugger.png" width="100%" alt="企业混合检索可视化调试器：各阶段耗时瀑布、ACL 拦截计数与 FTS5 Trigram 表达式">
+      <p align="center"><sub><b>混合检索可视化调试器</b>：阶段耗时瀑布、ACL 预过滤统计、FTS5 拆词与 Rerank 评分</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="top">
+      <img src="./docs/media/isolation-lab.png" width="100%" alt="多租户物理隔离与 ACL 演练场：星辰云科与青松医疗双租户并发隔离实测">
+      <p align="center"><sub><b>多租户隔离与 ACL 演练场</b>：星辰云科（Aurora Cloud）与青松医疗（Cedar MedTech）物理分库并发检索实测</sub></p>
+    </td>
+  </tr>
+</table>
 
-## 企业级生产模式（v0.6.0 双模架构）
+<p align="center"><sub>以上截图均实拍自本地 React 19 企业控制台（使用内置合成企业语料与离线词法向量运行，无需外部付费 API Key）。</sub></p>
 
-在**100% 保持核心零依赖 SDK 兼容**的基础上，`v0.6.0` 新增可选的企业生产服务层与 React 19 双视角控制台（`pip install -e ".[enterprise]"`）：
+---
 
-- **控制面 IAM 与多租户物理隔离**：平台超管 API（`X-Admin-Token`）、Scoped API Key（`read`/`write`/`chat`/`eval`/`tenant_admin`）、TTL 过期、零停机平滑轮换、吊销、租户启停熔断、每租户独立 SQLite WAL 物理分库池（`TenantPool`）与只读并发连接池 + `VectorCache`。
-- **防篡改审计与在线热备**：全链路操作写入 SHA-256 哈希链审计日志（支持一键全链完整性校验）；支持 `sqlite3.Connection.backup()` 在线热备、`PRAGMA integrity_check` 与回滚恢复。
-- **企业级检索与问答**：召回前 Metadata DSL 过滤（`$eq`/`$gt`/`$in`/`$contains` 等）+ 文档级 `_acl` 角色权限过滤；二阶段 `LexicalCrossReranker` / `APIReranker`；父子切片上下文展开；无答案拒答门控（Abstention Gate）；SSE 流式 Grounded 引用溯源问答（支持 OpenAI 兼容模型与离线抽取式引用合成）。
-- **多格式文档管线与可观测性**：原生支持 `.md/.txt/.html/.csv/.json/.docx/.pdf` 解析与异步任务进度队列；提供 `X-Request-ID`、`/api/v1/ready`、Prometheus `/metrics` 与在线检索策略对比评测台。
+## 30 秒启动企业工作台
 
-```bash
-# 本地一键启动企业双视角控制台（含星辰云科 + 青松医疗双租户隔离演示数据）
-pip install -e ".[enterprise]"
-tenant-rag-enterprise --data-dir ./enterprise_data --port 8080 --demo-mode --seed-demo
-# 访问 http://127.0.0.1:8080
-```
+### 方式一：本地单命令演示启动（零 API Key 即可完整体验）
 
-详细架构与接口说明见 [企业级生产架构文档](docs/ENTERPRISE_ARCHITECTURE.zh-CN.md)，容器编排见 `Dockerfile` 与 `docker-compose.yml`。
-
-## 真实本地模型案例
-
-[完整中英双租户教程](examples/local_trial/README.zh-CN.md)从正式 v0.5.0 wheel
-开始，下载校验固定版本的免费本地 embedding 模型，导入合成 Markdown，
-核对来源原文与租户隔离。已在干净 CPU 环境复现。也保留失败：默认 RRF
-只取回 14 个有答案问题中的 12 个完整标注句，两个无答案问题仍返回片段。
-这不是 LLM 生成回答或独立质量评测。v0.5.1 加入案例，核心行为不变。
-
-## 安装 v0.5.1
-
-从 [GitHub Release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.1) 下载 wheel 和 `SHA256SUMS`，核对 wheel 的 SHA-256 后执行 `python -m pip install tenant_rag-0.5.1-py3-none-any.whl`。本版本通过 GitHub 分发，未发布到 PyPI；仍需满足下述环境要求并注意使用边界。
-
-## 从源码安装
-
-要求 **Python 3.10+**，SQLite 支持 **FTS5 + trigram tokenizer**（SQLite 3.34+）。运行时无第三方依赖；构建包使用 setuptools。
+要求 **Python 3.10+** 且 SQLite 支持 **FTS5 + trigram tokenizer**（SQLite 3.34+）。
 
 ```bash
 git clone https://github.com/tsumon/tenant-rag.git
 cd tenant-rag
-python3 -m venv .venv
-. .venv/bin/activate
+python3 -m venv .venv && . .venv/bin/activate
+python -m pip install -e ".[enterprise]"
+
+# 启动企业网关 + 内置 React 19 双视角控制台，并自动初始化双租户演示数据
+tenant-rag-enterprise --data-dir ./enterprise_data --port 8080 --demo-mode --seed-demo
+```
+
+浏览器打开 **http://127.0.0.1:8080**，即可在左上角一键切换：
+- **平台超管端**：`全局运行大盘`、`租户与物理隔离`（含在线热备与回滚）、`API Key 生命周期`（签发/轮换/吊销）、`防篡改审计中心`（SHA-256 哈希链校验）。
+- **租户工作台**：`知识库与切片透视`、`混合检索调试器`、`引用溯源问答台`、`在线检索评测台`、`多租户隔离演练场`。
+
+验证服务就绪与 Prometheus 指标：
+
+```bash
+curl -sS http://127.0.0.1:8080/api/v1/ready
+curl -sS http://127.0.0.1:8080/metrics | head -n 15
+```
+
+### 方式二：Docker Compose 生产编排
+
+```bash
+cp .env.example .env
+# 在 .env 中填入强随机 TENANT_RAG_ADMIN_TOKEN（及可选 EMBED_* / LLM_* 端点）
+docker compose up -d --build
+```
+
+生产模式默认关闭 `--demo-mode`，未显式配置 `TENANT_RAG_ADMIN_TOKEN` 时所有 `/api/v1/admin/*` 接口默认拒绝访问（fail-closed）。
+
+---
+
+## 五分钟体验零依赖核心 SDK
+
+仅需轻量化嵌入式检索组件时，无需安装任何第三方依赖：
+
+```bash
 python -m pip install .
 python -c "import sqlite3; sqlite3.connect(':memory:').execute(\"CREATE VIRTUAL TABLE probe USING fts5(text, tokenize='trigram')\")"
 ```
 
-上面是源码安装流程，不表示已经发布到 PyPI。
-
-## 五分钟跑通
-
-生成随机租户 key，初始化服务端将使用的**同一个数据库**。注册只需执行一次；重复注册会报错。保留此终端，后续 curl 使用同一个环境变量。
-
-```bash
-export TENANT_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
-python - <<'PY'
-import os
+```python
 from tenantrag import TenantRAG
-with TenantRAG('tenantrag.db') as rag:
-    rag.register('demo-user', os.environ['TENANT_KEY'], quota_docs=5000)
-    rag.index(os.environ['TENANT_KEY'], '腾讯视频 VIP 年费 198 元', doc_id='bill-1')
-    print(rag.search(os.environ['TENANT_KEY'], '腾讯视频多少钱'))
-PY
+from tenantrag.embed import FakeEmbedder
 
-# 在另一终端进入同一目录、激活虚拟环境，再启动服务：
-tenant-rag --db tenantrag.db --port 8000
+with TenantRAG("example.db", embedder=FakeEmbedder()) as rag:
+    rag.register("demo-user", "example-only-key-change-me", quota_docs=5000)
+    rag.ingest(
+        "example-only-key-change-me",
+        "# 退费说明\n开通 14 个自然日内且 Token 消耗低于 5% 可申请全额退费。",
+        doc_id="refund-policy",
+        source="refunds.md",
+        format="markdown",
+        max_chars=400,
+        overlap=50,
+    )
+    hits = rag.search("example-only-key-change-me", "14天全额退费", k=5)
+    print(hits[0]["doc_id"], hits[0]["metadata"]["_chunk"])
 ```
 
-回到保存 TENANT_KEY 的终端：
+原有轻量 HTTP 服务（`tenant-rag --db example.db --port 8000`）与本地管理页（`tenant-rag-admin --api http://127.0.0.1:8000 --port 8002`）继续保持 100% 兼容。真实本地模型复现案例见 [完整中英双租户教程](examples/local_trial/README.zh-CN.md)。
 
-```bash
-curl -sS http://127.0.0.1:8000/v1/search \
-  -H "Authorization: Bearer $TENANT_KEY" \
-  -H 'Content-Type: application/json' \
-  -d '{"query":"腾讯视频多少钱","k":5}'
-```
+---
 
-默认 FakeEmbedder 是确定性**词法哈希向量**，不具备真正的语义能力。上述流程不下载模型、不调用外部 API，也不产生模型费用。
+## 架构与两阶段检索流水线
 
-### 本地管理界面
+<p align="center">
+  <img src="./assets/readme/architecture.svg" width="100%" alt="tenant-rag 企业级双平面架构与两阶段检索流水线">
+</p>
 
-```bash
-tenant-rag-admin --api http://127.0.0.1:8000 --port 8002
-```
+1. **控制面 IAM（`control_plane.db`）**：管理租户生命周期（`active` / `suspended` 瞬时熔断）、动态文档/切片/RPM 配额、SHA-256 存储的 Scoped API Key（`tr_live_*`）、异步任务状态、备份清单，以及支持全链防篡改验证的 **SHA-256 哈希链审计日志**（`/api/v1/admin/audit/verify`）。
+2. **物理分库存储池（`TenantPool`）**：每个租户独享 `tenants/<tenant_id>/index.db`（严格校验 `^[A-Za-z0-9._-]{1,64}$` 防止路径穿越），消除跨租户 FTS5 BM25 词频统计干扰与写锁阻塞。查询走 `mode=ro` 并发只读连接池 + 写入版本号驱动的归一化 `VectorCache`。
+3. **召回前 Metadata DSL 与 `_acl` 权限过滤**：在进入向量与 FTS5 Top-K 截断**之前**先筛选合法候选集，避免高密级或无关文档挤占名额：
+   ```json
+   {
+     "query": "企业版 SLA 可用性赔付",
+     "k": 5,
+     "fusion": "rrf",
+     "reranker": "lexical",
+     "context_window": 1,
+     "check_abstention": true,
+     "min_vector_score": 0.28,
+     "filters": { "dept": { "$eq": "cloud" }, "sla_pct": { "$gte": 99.9 } },
+     "principal": { "user_id": "alice", "roles": ["hr_director"] }
+   }
+   ```
+4. **二阶段重排、父子上下文展开与拒答门控**：`LexicalCrossReranker` 补充 CJK 二元字/单字覆盖度与数字编码精确匹配（弥补 trigram 对 2 字以下中文短词的召回盲区）；`APIReranker` 对接标准 `/rerank` 服务。`context_window` 自动还原相邻父文档片段，`check_abstention` 在缺失足够语义/关键词证据时安全拒答。
+5. **多格式解析与 Grounded SSE 问答**：支持 `.md`、`.txt`、`.html`、`.csv`/`.tsv`、`.json`/`.jsonl`、标准库 `.docx` XML 与 `.pdf`（`pypdf`）入库；`/api/v1/chat/stream` 输出带 `[n]` 精确字符偏移角标的流式答复。
 
-打开 http://127.0.0.1:8002，粘贴生成的租户 key，即可上传文本/Markdown、浏览分页文档、检索和删除。key 只保存在页面内存，不写浏览器存储。创建租户仍通过可信 Python 操作完成。两个服务默认仅监听 loopback，管理界面**不能作为公网管理后台**。安装 wheel 后也包含界面 HTML。
+---
 
-## 接口约定
+## HTTP 接口总览
 
-Python 用法见 [英文完整示例](README.md#python-api)。`TenantRAG` 支持 `with` 自动关闭；同租户相同 doc_id 会覆盖文本、metadata 和向量。全量遍历要显式翻页。
+### 经典兼容接口（`/v1/*`，租户 Bearer Key）
 
-长文档使用 `rag.ingest(key, text, doc_id="handbook", source="handbook.md", format="markdown")`，批量使用 `rag.ingest_batch(key, documents)`。固定父文档 ID 的相同内容重试跳过写入和模型请求；内容哈希包含文本、metadata、source 和切块选项。列表/配额按父文档计数，搜索返回片段及 `metadata._chunk` 中的父 ID、来源、起止偏移。偏移按 Unicode 字符计数，结束位置不包含在内，不是字节或 token。替换/删除父文档会一并移除旧片段；不允许直接修改片段。原有 `index` 仍索引整篇，不自动切块。详见[参数、更新与配额语义](docs/V0.4.md#text-and-markdown-ingestion)。
-
-除 health 外，HTTP 都需 `Authorization: Bearer <tenant-key>`。
-
-| 方法 | 路径 | 参数 / 返回 |
+| 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/v1/index` | text，doc_id / metadata 可选；返回文档 ID |
-| POST | `/v1/ingest` | text，doc_id / metadata / source / format / max_chars / overlap 可选；返回父文档及切块摘要 |
-| POST | `/v1/ingest/batch` | documents 和共用 max_chars / overlap；返回原子批量摘要 |
-| POST | `/v1/search` | query、k；返回排名及 matched 通道 |
-| GET | `/v1/docs?limit=100&offset=0` | 分页文档 |
-| DELETE | `/v1/docs/<URL编码后的ID>` | deleted 布尔值 |
-| GET | `/v1/usage` | 配额、今日请求量、限流策略 |
-| GET | `/v1/health` | 无需鉴权，仅检查进程存活，不验证模型服务 |
+| `POST` | `/v1/index` | 单文档直接索引（不自动切块） |
+| `POST` | `/v1/ingest` | 显式文本/Markdown 切块入库，保留 `_chunk` 偏移 |
+| `POST` | `/v1/ingest/batch` | 原子批量增量入库（复用未变化文本向量） |
+| `POST` | `/v1/search` | 混合检索（默认 RRF，可选 `fusion="score"`） |
+| `GET` | `/v1/docs` | 分页获取父文档/单文档列表 |
+| `DELETE` | `/v1/docs/<id>` | 原子删除父文档及其全部子切片 |
+| `GET` | `/v1/usage` | 文档用量、配额、今日请求计数与限流配置 |
+| `GET` | `/v1/health` | 进程存活探针 |
 
-错误码：参数 `400`，鉴权 `401`，配额 `403`，模型身份或并发导入冲突 `409`，限流 `429`（含 Retry-After），意外后端/模型错误 `500`。JSON 请求体上限 10 MiB；搜索 k 限制在 1–100，HTTP 列表 limit 限制在 1–1000。默认每租户每进程 60 次/分钟。合法租户请求会计量，包括失败、限流以及 usage 请求本身；按服务器本地日期分天。Python 直接调用不参与 HTTP 限流与请求计量。
+### 企业租户接口（`/api/v1/*`，Scoped Bearer Key）
 
-## 接入真实 embedding
+| 方法 | 路径 | 所需 Scope | 说明 |
+|---|---|---|---|
+| `GET` | `/api/v1/whoami` | 任意有效 Key | 当前租户身份、权限、物理库统计与 LLM 配置状态 |
+| `GET` / `DELETE` | `/api/v1/docs` · `/api/v1/docs/{doc_id}` | `read` / `write` | 分页浏览、查看父文档全文与有序切片偏移、删除 |
+| `POST` | `/api/v1/ingest` | `write` | 切块入库并绑定 Metadata 与 `_acl` 权限 |
+| `POST` | `/api/v1/ingest/files` | `write` | 多格式文件上传解析（支持同步或异步任务队列） |
+| `GET` | `/api/v1/jobs` · `/api/v1/jobs/{job_id}` | `read` | 查询异步解析入库任务状态与进度 |
+| `POST` | `/api/v1/search` | `read` | ACL/Metadata 预过滤、二阶段重排、上下文展开与耗时瀑布 |
+| `POST` | `/api/v1/chat` · `/api/v1/chat/stream` | `chat` | 同步或 SSE 流式 Grounded 问答（含 `[n]` 引用与拒答门控） |
+| `POST` | `/api/v1/eval/run` | `eval` | 运行 5 种检索策略的在线对比评测（`golden` / `tenant_live`） |
+| `GET` | `/api/v1/ready` · `/metrics` | 公开 | 控制面就绪检查与 Prometheus 监控指标暴露 |
 
-只有设置 `--embed-base-url` 或 EMBED_BASE_URL，HTTP 服务才使用真实模型：
+### 平台超管接口（`/api/v1/admin/*`，`X-Admin-Token`）
 
-```bash
-export EMBED_BASE_URL='http://127.0.0.1:8080/v1'
-export EMBED_MODEL='your-served-embedding-model'
-export EMBED_REVISION='immutable-model-revision'  # 与提供方部署版本保持一致。
-export EMBED_API_KEY='local-demo'  # 仅用于忽略鉴权的本地端点的占位 Bearer 值。
-# 如果端点要求鉴权，请安全设置实际提供方密钥。
-tenant-rag --db semantic.db
-```
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| `GET` | `/api/v1/admin/overview` | 全平台租户配额使用率、物理库大小、P50/P95 延迟 |
+| `GET` / `POST` / `PATCH` / `DELETE` | `/api/v1/admin/tenants` · `/{tid}` | 创建租户、启停熔断、动态调整配额/RPM、物理擦除 |
+| `GET` / `POST` | `/api/v1/admin/keys` · `/tenants/{tid}/keys` | 查看或按 Scope 签发 `tr_live_*` 密钥（支持过期 TTL） |
+| `POST` | `/api/v1/admin/keys/{kid}/rotate` · `/revoke` | 宽限期零停机平滑轮换或立即吊销 |
+| `GET` / `POST` | `/api/v1/admin/backups` · `/tenants/{tid}/backups/{bid}/restore` | `sqlite3.backup()` 在线热备、SHA-256 + 完整性校验与回滚 |
+| `GET` | `/api/v1/admin/audit` · `/audit/verify` | 查询审计日志与一键核验 SHA-256 审计哈希链 |
 
-Python 可传入 `OpenAIEmbedder(api_key=..., base_url=..., model=...)`。使用提供方明确支持的 embeddings 接口；远程服务应使用 HTTPS。文档和查询会发往该端点，可能产生费用，需自行确认隐私处理政策。不要提交密钥。
+---
 
-**一个数据库固定使用同一 embedding 模型。** 数据库保存 endpoint/model/revision 身份和观测维度，同维度换模型也会拒绝混用；初始化不请求模型服务。优先使用不可变 revision，默认 `unspecified` 无法发现同名模型在服务端偷偷换权重。旧库没有身份信息时，只有能核实全部旧向量来源的可信管理员才可调用 `adopt_legacy_embeddings()`；否则执行 `reindex(target_embedder)`。重建影响全部租户，仅通过可信 Python 接口提供，不向 HTTP 暴露。失败或提交前中断保持旧索引，重试从头计算而非断点续传，可能重复产生模型费用。
+## 接入真实模型与测试评测
 
-**升级前停止全部 v0.3 进程并验证备份**：旧代码和直接 Store 写入绕过新增身份安全机制，不可混用版本。参阅[迁移操作步骤和边界](docs/V0.4.md#model-identity-and-upgrading-an-existing-database)。
-
-## 评测与测试
-
-```bash
-python -m unittest discover -v
-python eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
-python eval/run_eval.py --json --output eval-report.json
-python demo/run_demo.py
-```
-
-新增独立版本的运维合成挑战集、来源/标签说明、校验和校验以及不联网的 `--dry-run` 请求计划，详见[评测指南](eval/README.md)。
-
-也可使用可选的 **CPU 本地模型评测入口**：安装 `.[local-eval]` 后，传入 `--embedder local --model-path "$MODEL_DIR"`，读取事先准备好的可信 safetensors 模型，不自动下载或调用收费接口。现已对固定版本多语言模型实际评测，记录模型指纹、依赖、逐查询排名和退步。[融合研究](docs/FUSION.md)区分旧语料调参与独立合成评测，不把开发集分数当作生产质量证明。
-
-默认仍为 RRF。Python 和 HTTP 搜索可显式选择 `fusion="score"`、`lexical_weight=0.2`，保留余弦差距并限制关键词加分。此权重仅为开发集选出的候选，不是通用最优值；金额、币种等约束仍需专门处理。评测融合差异时使用 `--allow-fusion-change`，工具会核对模型、完整候选指纹及其他控制变量相同。
-
-默认只对 **pipeline 回归集**设置门禁；另有中英双语 semantic 挑战集，默认输出诊断指标。数据是人工合成用例，不是生产质量基准。报告区分模型、数据集及 hybrid/vector/fts 通道，计算 recall@k 与截断排名上的倒数排名指标。
-
-明确选择真实端点后再执行：
+### 环境变量配置真实 Embedding / LLM / Rerank
 
 ```bash
-python eval/run_eval.py --embedder openai --allow-provider-requests \
-  --base-url http://127.0.0.1:8080/v1 --model your-served-embedding-model \
-  --gate-suite semantic --output semantic-report.json
+export TENANT_RAG_ADMIN_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export EMBED_BASE_URL="https://api.openai.com/v1"
+export EMBED_API_KEY="your-embed-key"
+export EMBED_MODEL="text-embedding-3-small"
+export EMBED_REVISION="2024-02"
+
+# 可选：外接问答大模型与重排接口（不配则使用内置离线引用合成与 LexicalCrossReranker）
+export LLM_BASE_URL="https://api.openai.com/v1"
+export LLM_API_KEY="your-llm-key"
+export LLM_MODEL="gpt-4o-mini"
+
+tenant-rag-enterprise --host 127.0.0.1 --port 8080 --data-dir ./enterprise_data
 ```
 
-设置 EMBED_API_KEY；仅对忽略鉴权的本地端点使用非敏感占位值。该命令会发送评测文本到指定模型服务，可能付费。**离线测试不能证明真实模型质量**，也不保证 hybrid 在所有数据集都胜过 vector。请用已获授权、有代表性的数据实测后制定门槛。
+数据库依然严格绑定模型身份（`provider`、`model`、`revision`、`dimension`），切换模型需显式全库原子重建，防止同维度向量混用。详见 [v0.4 升级指南](docs/V0.4.md) 与 [v0.5 说明](docs/V0.5.md)。
 
-## 架构和边界
+### 离线回归门禁与证据校验
 
-```text
-API key → tenant ID
-查询 ┬→ embedding → 租户内余弦召回 ┐
-     └→ 安全 trigram 查询 → 租户内 FTS ├→ RRF → 租户内文档
-                                       ┘
+```bash
+# 全量单元与企业接口集成测试（245 项用例）
+python3 -m unittest discover -v
+
+# 检索管线门禁评测、订阅演示与发布证据校验
+python3 eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
+python3 demo/run_demo.py
+python3 scripts/verify_evidence.py
 ```
 
-FTS 表含未索引的 tenant_id 列，查询显式过滤。查询文字先分词，不直接拼接 FTS 语法；少于三个字符的中文词无法由 trigram 命中，依赖向量通道。向量检索扫描租户语料，适合个人规模，容量与延迟需自行测量。RRF 分数不是概率或置信度。
+---
 
-- **不是物理隔离**：多个租户共用数据库，通过逻辑过滤隔离；不提供静态加密，需保护主机、数据库文件和备份。key 保存为 SHA-256 哈希，泄露 Bearer key 相当于泄露租户权限，目前无内置轮换/撤销流程。
-- **不是公网加固服务**：标准库线程 HTTP 适合本地或可信环境。公网部署前需 TLS、网关、请求/并发限制、监控与安全审查；进程内限流不跨 worker 共享。
-- **备份**：使用 SQLite 在线 backup API 或 VACUUM INTO，并验证恢复。WAL 模式不能只复制运行中的 .db；checkpoint 后若写入恢复，复制仍不安全。文件级复制须先停止所有写入者。
-- **维护**：`rag.store.purge_usage(keep_days=90)` 清理旧计量行。旧全局 doc_id schema 在打开时事务迁移，操作前保存已验证的备份。
-- **尚未证明**：真实模型效果/可用性、生产负载、完整浏览器交互、分布式部署与对抗性安全审计。正式发布前按[清单](docs/RELEASING.md)检查。
+## 运行边界说明
+
+- **单机物理分库池，非多节点分布式集群**：每个租户拥有独立的本地 SQLite WAL 分库与只读并发池；如需跨多台宿主机水平扩容，需将存储与限流状态迁移至共享分布式数据库/缓存。
+- **默认离线词法向量仅用于管线验证与零费用演示**：未配置 `EMBED_BASE_URL` 时，`FakeEmbedder` 生成确定性词法哈希向量；正式上线请接入真实语义向量模型，并基于代表性业务数据校准 `min_vector_score` 拒答阈值。
+- **公网暴露前安全加固**：请在反向代理层启用 TLS，配置强随机 `TENANT_RAG_ADMIN_TOKEN`（生产环境切勿开启 `--demo-mode`），做好 `data-dir` 与热备目录的磁盘权限隔离并定期演练恢复流程。
+
+---
 
 ## License
 
 [MIT](LICENSE)。
-
-公开数据补测中，score 在英语 SciFact 和中文 T2 子集的召回均低于 RRF，保持实验性可选模式，不替换默认策略。长文截断、数字条件与成本见[完整评测说明](eval/public-study/README.md)。

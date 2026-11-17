@@ -1,226 +1,259 @@
-<div align="center">
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="tenant-rag v0.6.0: Zero-dependency SQLite core and physical-isolation enterprise RAG platform">
+</p>
 
-# tenant-rag
+<p align="center">
+  <a href="https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/tsumon/tenant-rag/ci.yml?branch=main&label=CI" alt="CI"></a>
+  <img src="https://img.shields.io/badge/version-0.6.0-2563EB" alt="Version 0.6.0">
+  <img src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/core_runtime_deps-0-10B981" alt="Core Runtime Deps: 0">
+  <img src="https://img.shields.io/badge/isolation-logical_%26_physical_WAL-0EA5E9" alt="Isolation: Logical & Physical WAL">
+  <img src="https://img.shields.io/badge/console-React_19_%2B_TS-61DAFB?logo=react&logoColor=black" alt="Console: React 19 + TS">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F59E0B" alt="MIT License"></a>
+</p>
 
-**Your users' documents. Their own search results. One SQLite database.**
+<p align="center">
+  <strong>Every tenant's data stays inside its own retrieval boundary — from zero-dependency embedded SQLite to physical-isolation enterprise RAG.</strong>
+</p>
 
-Small, tenant-scoped hybrid retrieval for personal AI applications.
+<p align="center">
+  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="#30-second-enterprise-quickstart">Enterprise Quickstart</a> ·
+  <a href="#workbench-tour">Workbench Tour</a> ·
+  <a href="#architecture--two-stage-pipeline">Architecture</a> ·
+  <a href="#http-api-reference">API Reference</a> ·
+  <a href="docs/ENTERPRISE_ARCHITECTURE.zh-CN.md">Enterprise Spec</a> ·
+  <a href="docs/FUSION.md">Fusion Study</a> ·
+  <a href="docs/RELEASING.md">Release Checklist</a>
+</p>
 
-[![CI](https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml)
-![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
-![Runtime dependencies: zero](https://img.shields.io/badge/runtime_dependencies-zero-green)
-[![MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
+---
 
-[中文](README.zh-CN.md) · [Release checklist](docs/RELEASING.md) · [Evaluation](#evaluation)
+## Dual-Mode Positioning: Embedded Core + Enterprise Production
 
-</div>
+`tenant-rag` preserves a strict **dual-mode boundary** so small embedded apps pay zero dependency overhead while production teams get full multi-tenant governance out of the box:
 
-> **v0.4:** model identity checks, atomic reindex and incremental text/Markdown ingestion. Existing databases require explicit model adoption or reindex. Read the [upgrade and ingestion guide](docs/V0.4.md) before upgrading.
+| Dimension | Embedded Core SDK (`pip install .`) | Enterprise Production Layer (`pip install ".[enterprise]"`) |
+|---|---|---|
+| **Runtime dependencies** | **Zero** (`dependencies = []`, Python 3.10+ stdlib + SQLite FTS5) | FastAPI, Uvicorn, Pydantic, `python-multipart`, `pypdf` |
+| **Tenant isolation** | Logical `tenant_id` scoping inside one SQLite file | **Physical per-tenant SQLite WAL pool** (`tenants/<tid>/index.db`) + RO connection pool + `VectorCache` |
+| **IAM & Key lifecycle** | Static bearer key SHA-256 lookup | Control Plane DB, scoped keys (`read`/`write`/`chat`/`eval`/`tenant_admin`), TTL, **zero-downtime rotation**, suspension & revocation |
+| **Retrieval pipeline** | Cosine + FTS5 trigram + RRF / opt-in Score fusion | **Pre-retrieval Metadata DSL & `_acl` roles** -> Hybrid Fusion -> **2-Stage Reranker** -> Sibling Context Window -> **Abstention Gate** |
+| **Document pipeline** | Sync `index()` & `ingest()` (Text / Markdown) | `.pdf`, `.docx`, `.html`, `.csv`/`.tsv`, `.json`/`.jsonl`, `.md`, `.txt` + **AsyncJobManager** queue |
+| **Q&A & Verification** | Retrieval hits with `_chunk` offsets | **SSE Grounded Chat** with `[n]` character-offset citations (OpenAI-compatible or offline synthesis) + Online Recall/MRR Eval |
+| **Operations & UI** | `tenant-rag` + lightweight local HTML admin | `tenant-rag-enterprise` + **React 19 Dual-Perspective Console** + SHA-256 audit hash chain + Hot backup/restore + `/metrics` |
 
-## What you get
+---
 
-- **Hybrid search:** cosine vectors + SQLite FTS5 trigram keywords, combined with reciprocal rank fusion (RRF).
-- **Logical tenant isolation:** API keys resolve to tenants; documents, searches, deletion, quotas and usage are tenant-scoped. Different tenants can reuse a document ID.
-- **Small operational footprint:** a SQLite database, Python standard library runtime, optional OpenAI-compatible embeddings.
-- **Usable interfaces:** Python library, bearer-auth HTTP API, and a local browser administration tool.
-- **Explicit long-document ingestion:** deterministic text/Markdown chunks, source offsets, atomic parent updates and incremental batch embedding reuse.
-- **Model safety:** persisted embedding identity and dimension checks, explicit legacy adoption and atomic database-wide reindex.
-- **Regression coverage:** isolation, migration rollback, concurrent quota enforcement, malformed requests and deterministic retrieval evaluation.
+## Workbench Tour
 
-This is a **retrieval component**, not a complete knowledge-base product or hosted SaaS. It does not generate answers, parse PDFs, manage user accounts, enforce document ACLs inside a tenant, or provide distributed storage. The included subscription agent demonstrates retrieval with templated answers, not an LLM agent platform.
+<p align="center">
+  <img src="./docs/media/grounded-chat.png" width="100%" alt="Grounded SSE citation chat with inline [1] markers and highlighted parent offset drawer">
+</p>
 
-**v0.5.0** adds opt-in experimental score fusion and reproducible local evaluation.
-RRF remains the default. See [upgrade notes](docs/V0.5.md).
+<table width="100%">
+  <tr>
+    <td width="50%" valign="top">
+      <img src="./docs/media/admin-overview.png" width="100%" alt="Platform Admin overview dashboard with physical SQLite tenant health and metrics">
+      <p align="center"><sub><b>Platform Admin Overview</b> · Quota usage, P95 latency, backup count, and Prometheus <code>/metrics</code></sub></p>
+    </td>
+    <td width="50%" valign="top">
+      <img src="./docs/media/retrieval-debugger.png" width="100%" alt="Retrieval pipeline debugger showing stage latency waterfall and FTS5 trigram breakdown">
+      <p align="center"><sub><b>Retrieval Waterfall Debugger</b> · Pre-filter counts, stage timings, FTS5 tokens, and rerank deltas</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="top">
+      <img src="./docs/media/isolation-lab.png" width="100%" alt="Dual-tenant concurrent isolation and ACL enforcement simulator">
+      <p align="center"><sub><b>Dual-Tenant Isolation &amp; ACL Lab</b> · Concurrent verification across physical Aurora Cloud &amp; Cedar MedTech databases</sub></p>
+    </td>
+  </tr>
+</table>
 
-## Enterprise Production Mode (v0.6.0 Dual-Mode)
+<p align="center"><sub>Real screenshots captured from the local React 19 workbench on synthetic demo corpora with offline embeddings; no paid external model calls.</sub></p>
 
-While keeping the core zero-dependency `TenantRAG` SDK 100% compatible, `v0.6.0` adds an optional `enterprise` extra (`pip install -e ".[enterprise]"`) with a FastAPI production server and bundled React 19 + TypeScript + Tailwind workbench:
+---
 
-- **Control Plane IAM & Physical Isolation**: SuperAdmin governance API, scoped API keys (`read`/`write`/`chat`/`eval`/`tenant_admin`), TTL expiry, zero-downtime key rotation, revocation, tenant suspension circuit-breaker, physical per-tenant SQLite WAL pool (`TenantPool`) with concurrent read-only pools & `VectorCache`, and SHA-256 hash-chained audit logs.
-- **Enterprise Retrieval & Grounded Chat**: Pre-retrieval Metadata DSL & `_acl` document authorization, 2-stage `LexicalCrossReranker` / `APIReranker`, parent-child sibling context expansion, evidence-sufficiency abstention gating, and SSE streaming grounded Q&A with `[n]` character-offset citations.
-- **Multi-Format Pipeline & Observability**: Parsers for `.md/.txt/.html/.csv/.json/.docx/.pdf`, async ingestion jobs, online SQLite hot backup/restore, `X-Request-ID`, `/api/v1/ready`, Prometheus `/metrics`, and an online retrieval benchmark runner.
+## 30-Second Enterprise Quickstart
 
-```bash
-pip install -e ".[enterprise]"
-tenant-rag-enterprise --data-dir ./enterprise_data --port 8080 --demo-mode --seed-demo
-# Open http://127.0.0.1:8080
-```
+### Option A: Local Single-Command Launch (Demo Mode)
 
-See [docs/ENTERPRISE_ARCHITECTURE.zh-CN.md](docs/ENTERPRISE_ARCHITECTURE.zh-CN.md) and `docker-compose.yml` for production deployment details.
-
-## Real local-model trial
-
-[Run the complete bilingual two-tenant example](examples/local_trial/README.md):
-install the official v0.5.0 wheel, download a verified immutable multilingual
-embedding model, import synthetic Markdown, and inspect exact source excerpts.
-The example has been repeated in a clean CPU environment. It includes isolation
-checks and the failures: default RRF returns the complete labeled answer evidence
-for 12 of 14 answerable questions, and both out-of-scope questions still return
-hits. This is a retrieval demonstration, not an LLM answer generator or an
-independent quality benchmark. v0.5.1 adds the example; core behavior is unchanged.
-
-## Install v0.5.1
-
-Download the wheel and `SHA256SUMS` from the [GitHub release](https://github.com/tsumon/tenant-rag/releases/tag/v0.5.1), verify the wheel checksum, then install it with `python -m pip install tenant_rag-0.5.1-py3-none-any.whl`. This release is distributed on GitHub, not PyPI. The requirements and limitations below still apply.
-
-## Install from source
-
-Requires **Python 3.10+** and SQLite compiled with **FTS5 and the trigram tokenizer** (SQLite 3.34+). The core has no third-party runtime dependencies. Building packages uses setuptools.
+Requires **Python 3.10+** with SQLite FTS5 trigram support.
 
 ```bash
 git clone https://github.com/tsumon/tenant-rag.git
 cd tenant-rag
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install .
+python3 -m venv .venv && . .venv/bin/activate
+python -m pip install -e ".[enterprise]"
+
+# Starts FastAPI + bundled React 19 UI + seeds Aurora Cloud & Cedar MedTech demo tenants
+tenant-rag-enterprise --data-dir ./enterprise_data --port 8080 --demo-mode --seed-demo
 ```
 
-This documents a source install, not an already-published PyPI release. Check SQLite support:
+Open **http://127.0.0.1:8080** to explore both **Platform Admin** (`全局运行大盘`, `租户与物理隔离`, `API Key 生命周期`, `防篡改审计中心`) and **Tenant Workspace** (`知识库与切片透视`, `混合检索调试器`, `引用溯源问答台`, `在线检索评测台`, `多租户隔离演练场`).
+
+Verify readiness and Prometheus metrics from any shell:
 
 ```bash
+curl -sS http://127.0.0.1:8080/api/v1/ready
+curl -sS http://127.0.0.1:8080/metrics | head -n 15
+```
+
+### Option B: Docker Compose Production Deployment
+
+```bash
+cp .env.example .env
+# Edit .env and set a strong TENANT_RAG_ADMIN_TOKEN (plus optional EMBED_* / LLM_* keys)
+docker compose up -d --build
+```
+
+Production mode disables `--demo-mode` and fails closed on `/api/v1/admin/*` unless `TENANT_RAG_ADMIN_TOKEN` is supplied via `--admin-token` or environment variable.
+
+---
+
+## 5-Minute Core SDK Quickstart (Zero Dependencies)
+
+If you only need the embedded library without FastAPI or UI dependencies:
+
+```bash
+python -m pip install .
 python -c "import sqlite3; sqlite3.connect(':memory:').execute(\"CREATE VIRTUAL TABLE probe USING fts5(text, tokenize='trigram')\")"
 ```
-
-## Five-minute local demo
-
-Create one random tenant key and initialize **the same database** the server will use. Keep this shell open for the curl commands; tenant registration is a one-time operation and rejects duplicates.
-
-```bash
-export TENANT_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
-python - <<'PY'
-import os
-from tenantrag import TenantRAG
-with TenantRAG('tenantrag.db') as rag:
-    rag.register('demo-user', os.environ['TENANT_KEY'], quota_docs=5000)
-    rag.index(os.environ['TENANT_KEY'], 'Netflix renews at $15.49/month', doc_id='bill-1')
-    print(rag.search(os.environ['TENANT_KEY'], 'Netflix price'))
-PY
-
-# Run in another terminal, from this directory with the venv activated:
-tenant-rag --db tenantrag.db --port 8000
-```
-
-Back in the shell holding TENANT_KEY:
-
-```bash
-curl -sS http://127.0.0.1:8000/v1/search \
-  -H "Authorization: Bearer $TENANT_KEY" \
-  -H 'Content-Type: application/json' \
-  -d '{"query":"Netflix price","k":5}'
-```
-
-Default embeddings are deterministic **lexical hash vectors**, not semantic embeddings. No model downloads, provider calls or API cost are needed for this demo.
-
-### Local admin UI
-
-```bash
-tenant-rag-admin --api http://127.0.0.1:8000 --port 8002
-```
-
-Open http://127.0.0.1:8002 and paste the generated tenant key. Browse, upload text/Markdown, search and delete documents. The key stays in page memory, not browser storage. Tenant creation remains a trusted Python operation. Both servers bind to loopback by default; the admin UI is a local tool, **not a public admin console**. The wheel includes its HTML asset.
-
-## Python API
 
 ```python
 from tenantrag import TenantRAG
 from tenantrag.embed import FakeEmbedder
 
-with TenantRAG('example.db', embedder=FakeEmbedder()) as rag:
-    rag.register('alice', 'example-only-key-change-me')
-    rag.index('example-only-key-change-me', 'Order ABC-2026 shipped', doc_id='order')
-    hits = rag.search('example-only-key-change-me', 'ABC-2026', k=5)
-    docs = rag.list_docs('example-only-key-change-me', limit=100, offset=0)
-    usage = rag.usage('example-only-key-change-me')
-    deleted = rag.delete('example-only-key-change-me', 'order')
+with TenantRAG("example.db", embedder=FakeEmbedder()) as rag:
+    rag.register("alice", "example-only-key-change-me", quota_docs=5000)
+    rag.ingest(
+        "example-only-key-change-me",
+        "# Refund Policy\nFull refunds within 14 calendar days when usage is below 5%.",
+        doc_id="refund-policy",
+        source="refunds.md",
+        format="markdown",
+        max_chars=400,
+        overlap=50,
+    )
+    hits = rag.search("example-only-key-change-me", "14 calendar days refund", k=5)
+    print(hits[0]["doc_id"], hits[0]["metadata"]["_chunk"])
 ```
 
-Use randomly generated secrets in real applications. Indexing an existing ID replaces its text, metadata and embedding. Pagination is explicit. Python calls do not increment HTTP request metering or use the HTTP rate limiter.
+Legacy HTTP server (`tenant-rag --db example.db --port 8000`) and local HTML admin (`tenant-rag-admin --api http://127.0.0.1:8000 --port 8002`) remain unchanged. Also see the [reproducible local real-model trial](examples/local_trial/README.md) (`v0.5.1`).
 
-### Long documents and incremental batches
+---
 
-Use `rag.ingest(key, text, doc_id="handbook", source="handbook.md", format="markdown")` for explicit chunking, or `rag.ingest_batch(key, documents)` for an atomic batch. Stable parent IDs make unchanged retries idempotent. Listing and quotas count parents; searches return chunks with `metadata._chunk` source offsets. Delete or replace the parent to remove obsolete chunks. Existing `index` remains a single-document API. See [options, lifecycle and limits](docs/V0.4.md#text-and-markdown-ingestion).
+## Architecture & Two-Stage Pipeline
 
-## HTTP API
+<p align="center">
+  <img src="./assets/readme/architecture.svg" width="100%" alt="Enterprise Dual-Plane Architecture and Two-Stage Retrieval Pipeline">
+</p>
 
-Except health, endpoints require `Authorization: Bearer <tenant-key>`.
+1. **Control Plane (`control_plane.db`)**: Stores tenant lifecycle states (`active` / `suspended`), dynamic doc/chunk/RPM quotas, SHA-256 hashed scoped API keys (`tr_live_*`), async ingestion job telemetry, backup inventory, and a **SHA-256 hash-chained audit log** (`entry_hash = sha256(prev_hash | payload)`) verifiable via `/api/v1/admin/audit/verify`.
+2. **Physical Per-Tenant Pool (`TenantPool`)**: Isolates each tenant in `tenants/<tenant_id>/index.db` (strictly validated against `^[A-Za-z0-9._-]{1,64}$`), preventing cross-tenant FTS5 BM25 IDF leakage and writer-lock contention. Concurrent reads use a `LifoQueue` pool of `mode=ro` SQLite connections plus a generation-tracked unit-normalized `VectorCache`.
+3. **Pre-Retrieval Metadata DSL & `_acl` Filtering**: Evaluates structured filters (`$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$contains`, `$exists`) and document ACLs (`visibility: "public" | "restricted"`, `allow_roles`, `allow_users`) **before** vector/FTS top-k truncation:
+   ```json
+   {
+     "query": "Enterprise SLA uptime credit",
+     "k": 5,
+     "fusion": "rrf",
+     "reranker": "lexical",
+     "context_window": 1,
+     "check_abstention": true,
+     "min_vector_score": 0.28,
+     "filters": { "dept": { "$eq": "cloud" }, "sla_pct": { "$gte": 99.9 } },
+     "principal": { "user_id": "alice", "roles": ["hr_director"] }
+   }
+   ```
+4. **Two-Stage Rerank, Context Window & Abstention Gate**: `LexicalCrossReranker` adds zero-dependency CJK bigram/unigram and numeric-code scoring (closing `<3`-char CJK gaps in SQLite trigram); `APIReranker` calls external `/rerank` endpoints. `context_window` reconstructs adjacent parent slices; `check_abstention` gates out-of-scope queries when `max_vector_score < min_vector_score` without lexical anchors.
+5. **Multi-Format Parsers & Grounded SSE Chat**: `parsers.py` ingests `.md`, `.txt`, `.html`, `.csv`/`.tsv`, `.json`/`.jsonl`, stdlib `.docx` XML, and `.pdf` (`pypdf`). `/api/v1/chat/stream` streams grounded answers with `[n]` parent offset citations using an OpenAI-compatible LLM or offline extractive synthesis.
 
-| Method | Endpoint | Payload / result |
+---
+
+## HTTP API Reference
+
+### Classic Compatibility API (`/v1/*`, Bearer Tenant Key)
+
+| Method | Path | Purpose |
 |---|---|---|
-| POST | `/v1/index` | `text`, optional `doc_id`, `metadata` → document ID |
-| POST | `/v1/ingest` | `text`, optional `doc_id`, `metadata`, `source`, `format`, `max_chars`, `overlap` → parent/chunk summary |
-| POST | `/v1/ingest/batch` | `documents` plus shared `max_chars`, `overlap` → atomic batch summaries |
-| POST | `/v1/search` | `query`, optional `k` → ranked hits with `matched` channels |
-| GET | `/v1/docs?limit=100&offset=0` | paginated documents |
-| DELETE | `/v1/docs/<url-encoded-id>` | `deleted` boolean |
-| GET | `/v1/usage` | document quota, today's requests, rate policy |
-| GET | `/v1/health` | unauthenticated process liveness, not provider readiness |
+| `POST` | `/v1/index` | Single-document index (`doc_id`, `text`, `metadata`) |
+| `POST` | `/v1/ingest` | Deterministic chunked ingestion with `_chunk` offsets |
+| `POST` | `/v1/ingest/batch` | Atomic incremental batch ingestion |
+| `POST` | `/v1/search` | Hybrid retrieval (`rrf` default or opt-in `score`) |
+| `GET` | `/v1/docs` | Paginated parent/standalone document listing |
+| `DELETE` | `/v1/docs/<id>` | Delete parent document and all child chunks |
+| `GET` | `/v1/usage` | Document count, quota, today's requests, and rate limit |
+| `GET` | `/v1/health` | Process liveness check |
 
-Errors: malformed input `400`, invalid key `401`, quota `403`, embedding identity or concurrent ingestion conflict `409`, rate limit `429` with `Retry-After`, unexpected backend/provider failure `500`. JSON bodies are limited to 10 MiB. Search `k` clamps to 1–100, list `limit` to 1–1000. HTTP requests by valid tenants are counted, including failed/rate-limited requests and the usage request itself. Daily usage uses the server's local date. Default rate limit is 60/minute per tenant and per server process.
+### Enterprise Tenant API (`/api/v1/*`, Scoped Bearer Key)
 
-## Real embeddings: explicit opt-in
+| Method | Path | Scope | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/whoami` | Any valid key | Current tenant context, scopes, storage stats & LLM status |
+| `GET` / `DELETE` | `/api/v1/docs` · `/api/v1/docs/{doc_id}` | `read` / `write` | List parents, inspect full parent + ordered chunks, or delete |
+| `POST` | `/api/v1/ingest` | `write` | Chunked ingestion with metadata and `_acl` |
+| `POST` | `/api/v1/ingest/files` | `write` | Multipart upload (`.pdf`, `.docx`, `.html`, `.csv`, `.json`, `.md`, `.txt`), sync or async |
+| `GET` | `/api/v1/jobs` · `/api/v1/jobs/{job_id}` | `read` | Poll async ingestion progress & chunk totals |
+| `POST` | `/api/v1/search` | `read` | Pre-filtered ACL/Metadata search, rerank, context window & timing waterfall |
+| `POST` | `/api/v1/chat` · `/api/v1/chat/stream` | `chat` | Sync or SSE streaming grounded Q&A with `[n]` offset citations & abstention |
+| `POST` | `/api/v1/eval/run` | `eval` | Run 5-strategy retrieval benchmark (`golden` / `tenant_live`) |
+| `GET` | `/api/v1/ready` · `/metrics` | Public | Control-plane readiness probe & Prometheus metrics exposition |
 
-The API server uses a real provider only when `--embed-base-url` or `EMBED_BASE_URL` is set:
+### Platform SuperAdmin API (`/api/v1/admin/*`, `X-Admin-Token`)
 
-```bash
-export EMBED_BASE_URL='http://127.0.0.1:8080/v1'
-export EMBED_MODEL='your-served-embedding-model'
-export EMBED_REVISION='immutable-model-revision'  # Match your provider deployment.
-export EMBED_API_KEY='local-demo'  # Dummy bearer value ONLY for a local no-auth endpoint.
-# For authenticated endpoints, securely set the actual provider key instead.
-tenant-rag --db semantic.db
-```
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/v1/admin/overview` | Platform totals, tenant storage/quota health, P50/P95 latency |
+| `GET` / `POST` / `PATCH` / `DELETE` | `/api/v1/admin/tenants` · `/{tid}` | Create tenant, suspend/activate circuit breaker, tune quotas/RPM, physical shred |
+| `GET` / `POST` | `/api/v1/admin/keys` · `/tenants/{tid}/keys` | List or issue scoped keys (`tr_live_*`) with optional expiry |
+| `POST` | `/api/v1/admin/keys/{kid}/rotate` · `/revoke` | Zero-downtime grace-period rotation or instant revocation |
+| `GET` / `POST` | `/api/v1/admin/backups` · `/tenants/{tid}/backups/{bid}/restore` | Online `sqlite3.backup()` hot snapshot, SHA-256 + integrity verification & restore |
+| `GET` | `/api/v1/admin/audit` · `/audit/verify` | Filter audit events & cryptographically verify SHA-256 hash chain |
 
-For Python, supply `OpenAIEmbedder(api_key=..., base_url=..., model=...)` to `TenantRAG`. Use a provider's documented embeddings-compatible endpoint, HTTPS for remote services, and an appropriate data-processing policy. Documents and queries are transmitted to that provider and may incur charges. Never commit credentials.
+---
 
-**One embedding model per database.** The endpoint/model/revision descriptor and observed dimension are persisted. Same-dimension model changes fail closed; initialization makes no provider requests. Use an immutable revision when possible: the default `unspecified` cannot detect weights changing behind an unchanged provider alias. Existing unlabeled databases require explicit, verified-provenance `adopt_legacy_embeddings()` or a full `reindex(target_embedder)` by a trusted operator. Reindex affects all tenants, commits atomically, and can be retried after interruption; it does not resume paid work. Stop all old v0.3 processes and take a verified backup first. See the [migration cookbook and identity limits](docs/V0.4.md#model-identity-and-upgrading-an-existing-database).
+## Real Models, Testing & Reproducible Evaluation
 
-## Evaluation
-
-```bash
-python -m unittest discover -v
-python eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
-python eval/run_eval.py --json --output eval-report.json
-python demo/run_demo.py
-```
-
-The [evaluation guide](eval/README.md) includes versioned synthetic corpora, checksum verification and a no-network `--dry-run` plan. An optional **CPU local-model path** evaluates an existing safetensors snapshot without a paid API or automatic downloads. A fixed multilingual model has now been run on the public development corpora; [the fusion study](docs/FUSION.md) records the results, tradeoffs and independent-evaluation protocol. These measurements do not establish production quality.
-
-The default gate checks the **pipeline regression suite** using fake lexical embeddings. A separate bilingual semantic challenge suite reports diagnostic results; synthetic fixtures are not a production quality benchmark. Reports identify the embedder and suite. Recall@k and reciprocal rank at the retrieved cutoff compare hybrid, vector and keyword channels.
-
-To deliberately evaluate an actual embeddings endpoint against the included synthetic texts:
+### Connecting Real Embedding, LLM & Rerank Endpoints
 
 ```bash
-python eval/run_eval.py --embedder openai --allow-provider-requests \
-  --base-url http://127.0.0.1:8080/v1 --model your-served-embedding-model \
-  --gate-suite semantic --output semantic-report.json
+export TENANT_RAG_ADMIN_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export EMBED_BASE_URL="https://api.openai.com/v1"
+export EMBED_API_KEY="your-embed-key"
+export EMBED_MODEL="text-embedding-3-small"
+export EMBED_REVISION="2024-02"
+
+# Optional external chat LLM and reranker (omit to use offline grounded synthesis + LexicalCrossReranker)
+export LLM_BASE_URL="https://api.openai.com/v1"
+export LLM_API_KEY="your-llm-key"
+export LLM_MODEL="gpt-4o-mini"
+
+tenant-rag-enterprise --host 127.0.0.1 --port 8080 --data-dir ./enterprise_data
 ```
 
-Set EMBED_API_KEY (use a non-secret dummy value only for local endpoints that ignore authentication). This opt-in makes network requests and can incur cost; inspect the dataset and endpoint first. **No real-model quality result is claimed by this repository's offline tests.** Hybrid is not guaranteed to outperform vectors on every dataset. Choose quality thresholds after measuring representative, consented data.
+Model identity (`provider`, `model`, `revision`, `dimension`) continues to be pinned per database; switching embedding models requires explicit `reindex()` so incompatible vectors are never mixed. See [v0.4 upgrade guide](docs/V0.4.md) and [v0.5 guide](docs/V0.5.md).
 
-## How retrieval works
+### Verification Suite
 
-RRF remains the default. To test an alternative that preserves cosine margins,
-use `rag.search(key, query, fusion="score", lexical_weight=0.2)` or add the same
-fields to the HTTP search body. This opt-in adds a bounded keyword-ranking
-bonus; it is not a numeric filter or a guarantee of better retrieval. See
-[formula, validation and limits](docs/FUSION.md).
+```bash
+# Core + Enterprise unit & API integration tests (245 tests)
+python3 -m unittest discover -v
 
-```text
-API key → tenant ID
-query ┬→ embedder → tenant-filtered cosine candidates ┐
-      └→ safe trigram FTS query → tenant-filtered hits ├→ RRF → tenant-scoped documents
-                                                      ┘
+# Retrieval regression gate + demo + signed evidence verification
+python3 eval/run_eval.py --k 3 --min-recall 0.8 --min-mrr 0.7
+python3 demo/run_demo.py
+python3 scripts/verify_evidence.py
 ```
 
-FTS stores `tenant_id` as an unindexed column and filters it explicitly. Query text is tokenized rather than interpolated as FTS syntax. Short CJK terms cannot match the trigram channel and rely on vectors. The vector channel scans each tenant's corpus; start with personal-scale data and measure latency rather than assuming a capacity guarantee. RRF scores are ranking scores, not probabilities or confidence estimates.
+---
 
-## Operating boundaries
+## Operating Boundaries
 
-- **Not internet-hardened:** stdlib threaded HTTP is intended for local/trusted deployments. Use TLS, gateway authentication controls, request/concurrency limits and monitoring before any public deployment. In-process rate limits are not global across workers.
-- **Shared storage:** logical isolation is not physical isolation or encryption. Protect database files, host access and backups. Keys are stored as SHA-256 hashes; a leaked bearer key grants tenant access. There is no built-in key rotation/revocation workflow.
-- **Backups:** use SQLite's online backup API or `VACUUM INTO`, then test restoration. Copying only a live `.db` file is unsafe in WAL mode, even after a checkpoint if writers resume. Stop all writers before filesystem-level copies.
-- **Maintenance:** `rag.store.purge_usage(keep_days=90)` removes older metering rows. Legacy global document-ID schemas migrate transactionally on open; take a verified backup first.
-- **Not yet covered:** real-provider availability/quality, production load, full browser interaction QA, distributed deployment and adversarial security audit. See the [release checklist](docs/RELEASING.md) before publishing.
+- **Single-node SQLite pool, not distributed clustering**: Each tenant has an independent WAL database with concurrent read connections on one host. Multi-host scaling requires shared storage/replication or migrating the storage adapter to a networked database, plus externalizing rate-limit state across workers.
+- **Default offline models are lexical, not semantic**: Without `EMBED_BASE_URL`, `FakeEmbedder` computes deterministic lexical hash vectors for reproducible testing and zero-cost demos; measure real semantic thresholds (`min_vector_score`) on representative consented corpora before setting production gates.
+- **Public deployment hardening**: Place FastAPI behind TLS, enforce strong `TENANT_RAG_ADMIN_TOKEN` secrets (`--demo-mode` must remain disabled in production), restrict filesystem permissions on `data-dir` and backups, and verify backup restorations regularly.
+
+---
 
 ## License
 
