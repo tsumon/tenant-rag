@@ -32,6 +32,22 @@ This is a **retrieval component**, not a complete knowledge-base product or host
 **v0.5.0** adds opt-in experimental score fusion and reproducible local evaluation.
 RRF remains the default. See [upgrade notes](docs/V0.5.md).
 
+## Enterprise Production Mode (v0.6.0 Dual-Mode)
+
+While keeping the core zero-dependency `TenantRAG` SDK 100% compatible, `v0.6.0` adds an optional `enterprise` extra (`pip install -e ".[enterprise]"`) with a FastAPI production server and bundled React 19 + TypeScript + Tailwind workbench:
+
+- **Control Plane IAM & Physical Isolation**: SuperAdmin governance API, scoped API keys (`read`/`write`/`chat`/`eval`/`tenant_admin`), TTL expiry, zero-downtime key rotation, revocation, tenant suspension circuit-breaker, physical per-tenant SQLite WAL pool (`TenantPool`) with concurrent read-only pools & `VectorCache`, and SHA-256 hash-chained audit logs.
+- **Enterprise Retrieval & Grounded Chat**: Pre-retrieval Metadata DSL & `_acl` document authorization, 2-stage `LexicalCrossReranker` / `APIReranker`, parent-child sibling context expansion, evidence-sufficiency abstention gating, and SSE streaming grounded Q&A with `[n]` character-offset citations.
+- **Multi-Format Pipeline & Observability**: Parsers for `.md/.txt/.html/.csv/.json/.docx/.pdf`, async ingestion jobs, online SQLite hot backup/restore, `X-Request-ID`, `/api/v1/ready`, Prometheus `/metrics`, and an online retrieval benchmark runner.
+
+```bash
+pip install -e ".[enterprise]"
+tenant-rag-enterprise --data-dir ./enterprise_data --port 8080 --demo-mode --seed-demo
+# Open http://127.0.0.1:8080
+```
+
+See [docs/ENTERPRISE_ARCHITECTURE.zh-CN.md](docs/ENTERPRISE_ARCHITECTURE.zh-CN.md) and `docker-compose.yml` for production deployment details.
+
 ## Real local-model trial
 
 [Run the complete bilingual two-tenant example](examples/local_trial/README.md):

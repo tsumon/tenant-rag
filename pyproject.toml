@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tenant-rag"
-version = "0.5.1"
-description = "SQLite-backed tenant-scoped hybrid retrieval for small AI applications"
+version = "0.6.0"
+description = "SQLite-backed tenant-scoped hybrid retrieval for small AI apps and enterprise multi-tenant RAG deployments"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -16,6 +16,13 @@ classifiers = ["Programming Language :: Python :: 3", "Operating System :: OS In
 
 [project.optional-dependencies]
 local-eval = ["sentence-transformers==5.6.0", "transformers==5.13.0", "torch==2.13.0"]
+enterprise = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "python-multipart>=0.0.12",
+    "pypdf>=5.0.0",
+    "pydantic>=2.7.0",
+]
 
 [project.urls]
 Repository = "https://github.com/tsumon/tenant-rag"
@@ -23,9 +30,11 @@ Repository = "https://github.com/tsumon/tenant-rag"
 [project.scripts]
 tenant-rag = "tenantrag.server:main"
 tenant-rag-admin = "admin.admin_server:main"
+tenant-rag-enterprise = "tenantrag.enterprise.cli:main"
 
 [tool.setuptools]
-packages = ["tenantrag", "admin", "admin.static"]
+packages = ["tenantrag", "tenantrag.enterprise", "tenantrag.enterprise.static", "admin", "admin.static"]
 
 [tool.setuptools.package-data]
 "admin.static" = ["*.html"]
+"tenantrag.enterprise.static" = ["*.html", "*.svg", "*.png", "*.json", "assets/*"]

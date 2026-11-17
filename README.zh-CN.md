@@ -30,6 +30,24 @@
 
 **v0.5.0** 新增显式启用的实验性 score 融合及可复现本地评测，默认仍为 RRF。参见[升级说明](docs/V0.5.md)。
 
+## 企业级生产模式（v0.6.0 双模架构）
+
+在**100% 保持核心零依赖 SDK 兼容**的基础上，`v0.6.0` 新增可选的企业生产服务层与 React 19 双视角控制台（`pip install -e ".[enterprise]"`）：
+
+- **控制面 IAM 与多租户物理隔离**：平台超管 API（`X-Admin-Token`）、Scoped API Key（`read`/`write`/`chat`/`eval`/`tenant_admin`）、TTL 过期、零停机平滑轮换、吊销、租户启停熔断、每租户独立 SQLite WAL 物理分库池（`TenantPool`）与只读并发连接池 + `VectorCache`。
+- **防篡改审计与在线热备**：全链路操作写入 SHA-256 哈希链审计日志（支持一键全链完整性校验）；支持 `sqlite3.Connection.backup()` 在线热备、`PRAGMA integrity_check` 与回滚恢复。
+- **企业级检索与问答**：召回前 Metadata DSL 过滤（`$eq`/`$gt`/`$in`/`$contains` 等）+ 文档级 `_acl` 角色权限过滤；二阶段 `LexicalCrossReranker` / `APIReranker`；父子切片上下文展开；无答案拒答门控（Abstention Gate）；SSE 流式 Grounded 引用溯源问答（支持 OpenAI 兼容模型与离线抽取式引用合成）。
+- **多格式文档管线与可观测性**：原生支持 `.md/.txt/.html/.csv/.json/.docx/.pdf` 解析与异步任务进度队列；提供 `X-Request-ID`、`/api/v1/ready`、Prometheus `/metrics` 与在线检索策略对比评测台。
+
+```bash
+# 本地一键启动企业双视角控制台（含星辰云科 + 青松医疗双租户隔离演示数据）
+pip install -e ".[enterprise]"
+tenant-rag-enterprise --data-dir ./enterprise_data --port 8080 --demo-mode --seed-demo
+# 访问 http://127.0.0.1:8080
+```
+
+详细架构与接口说明见 [企业级生产架构文档](docs/ENTERPRISE_ARCHITECTURE.zh-CN.md)，容器编排见 `Dockerfile` 与 `docker-compose.yml`。
+
 ## 真实本地模型案例
 
 [完整中英双租户教程](examples/local_trial/README.zh-CN.md)从正式 v0.5.0 wheel
