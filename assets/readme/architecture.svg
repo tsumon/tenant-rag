@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-label="tenant-rag Enterprise Dual-Plane Architecture">
+  <defs>
+    <linearGradient id="archBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1120"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#60A5FA"/>
+    </marker>
+    <marker id="arrowEmerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#34D399"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#FBBF24"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="440" rx="18" fill="url(#archBg)" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- Header -->
+  <text x="32" y="38" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="700">Enterprise Dual-Plane Architecture &amp; Two-Stage Retrieval Pipeline</text>
+  <text x="32" y="58" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="12">Backward-compatible /v1/* core + Control Plane IAM + Physical Per-Tenant SQLite WAL Pool</text>
+
+  <!-- Top Row: Clients + Gateway -->
+  <rect x="32" y="80" width="330" height="62" rx="10" fill="#131F38" stroke="#3B82F6" stroke-opacity="0.6"/>
+  <text x="197" y="106" text-anchor="middle" fill="#E2E8F0" font-family="-apple-system, sans-serif" font-size="14" font-weight="700">React 19 Workbench &amp; SDK Clients</text>
+  <text x="197" y="126" text-anchor="middle" fill="#93C5FD" font-family="ui-monospace, monospace" font-size="11.5">Platform Admin · Tenant Workspace · HTTP / SSE</text>
+
+  <line x1="362" y1="111" x2="418" y2="111" stroke="#60A5FA" stroke-width="2" marker-end="url(#arrowBlue)"/>
+
+  <rect x="424" y="80" width="744" height="62" rx="10" fill="#131F38" stroke="#3B82F6" stroke-opacity="0.6"/>
+  <text x="796" y="106" text-anchor="middle" fill="#E2E8F0" font-family="-apple-system, sans-serif" font-size="14" font-weight="700">FastAPI Production Gateway (tenantrag.enterprise.app)</text>
+  <text x="796" y="126" text-anchor="middle" fill="#93C5FD" font-family="ui-monospace, monospace" font-size="11.5">Bearer Scoped Auth · X-Admin-Token · Dynamic RPM Limiter · X-Request-ID · /api/v1/ready · /metrics</text>
+
+  <!-- Arrows from Gateway down -->
+  <line x1="197" y1="142" x2="197" y2="178" stroke="none"/>
+  <line x1="540" y1="142" x2="210" y2="180" stroke="#FBBF24" stroke-width="1.8" marker-end="url(#arrowAmber)"/>
+  <line x1="796" y1="142" x2="796" y2="180" stroke="#34D399" stroke-width="2" marker-end="url(#arrowEmerald)"/>
+
+  <!-- Left Column: Control Plane -->
+  <rect x="32" y="186" width="330" height="224" rx="12" fill="#111A2E" stroke="#F59E0B" stroke-opacity="0.5"/>
+  <text x="52" y="214" fill="#FDE68A" font-family="-apple-system, sans-serif" font-size="14" font-weight="700">Control Plane (control_plane.db)</text>
+  <g font-family="ui-monospace, monospace" font-size="11.5" fill="#CBD5E1">
+    <rect x="52" y="228" width="290" height="36" rx="7" fill="#0B1120" stroke="#334155"/>
+    <text x="66" y="250">Tenants: Active / Suspended · Quotas · RPM</text>
+
+    <rect x="52" y="272" width="290" height="36" rx="7" fill="#0B1120" stroke="#334155"/>
+    <text x="66" y="294">API Keys: Scopes · TTL · Zero-Downtime Rotate</text>
+
+    <rect x="52" y="316" width="290" height="36" rx="7" fill="#0B1120" stroke="#334155"/>
+    <text x="66" y="338">SHA-256 Hash-Chained Audit Log + Verify</text>
+
+    <rect x="52" y="360" width="290" height="36" rx="7" fill="#0B1120" stroke="#334155"/>
+    <text x="66" y="382">AsyncJobManager + Backup Registry</text>
+  </g>
+
+  <!-- Right Panel: Retrieval + Storage + Chat -->
+  <rect x="392" y="186" width="776" height="224" rx="12" fill="#111A2E" stroke="#10B981" stroke-opacity="0.5"/>
+  <text x="412" y="214" fill="#6EE7B7" font-family="-apple-system, sans-serif" font-size="14" font-weight="700">Data Plane · Per-Tenant Physical SQLite Pool &amp; Two-Stage Retrieval</text>
+
+  <!-- Pipeline Boxes Row 1 -->
+  <rect x="412" y="230" width="168" height="68" rx="8" fill="#0B1120" stroke="#334155"/>
+  <text x="496" y="254" text-anchor="middle" fill="#FDE68A" font-family="-apple-system, sans-serif" font-size="12.5" font-weight="700">1. Pre-Filter &amp; ACL</text>
+  <text x="496" y="273" text-anchor="middle" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">Metadata DSL + _acl</text>
+  <text x="496" y="288" text-anchor="middle" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">roles / allow_users</text>
+
+  <line x1="580" y1="264" x2="600" y2="264" stroke="#34D399" stroke-width="1.8" marker-end="url(#arrowEmerald)"/>
+
+  <rect x="606" y="230" width="176" height="68" rx="8" fill="#0B1120" stroke="#334155"/>
+  <text x="694" y="254" text-anchor="middle" fill="#93C5FD" font-family="-apple-system, sans-serif" font-size="12.5" font-weight="700">2. Hybrid Recall</text>
+  <text x="694" y="273" text-anchor="middle" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">VectorCache + FTS5</text>
+  <text x="694" y="288" text-anchor="middle" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">RRF / Score Fusion</text>
+
+  <line x1="782" y1="264" x2="802" y2="264" stroke="#34D399" stroke-width="1.8" marker-end="url(#arrowEmerald)"/>
+
+  <rect x="808" y="230" width="166" height="68" rx="8" fill="#0B1120" stroke="#334155"/>
+  <text x="891" y="254" text-anchor="middle" fill="#C4B5FD" font-family="-apple-system, sans-serif" font-size="12.5" font-weight="700">3. Stage-2 Rerank</text>
+  <text x="891" y="273" text-anchor="middle" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">LexicalCross / API</text>
+  <text x="891" y="288" text-anchor="middle" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">+ Sibling Context</text>
+
+  <line x1="974" y1="264" x2="994" y2="264" stroke="#34D399" stroke-width="1.8" marker-end="url(#arrowEmerald)"/>
+
+  <rect x="1000" y="230" width="148" height="68" rx="8" fill="#0B1120" stroke="#10B981" stroke-opacity="0.7"/>
+  <text x="1074" y="254" text-anchor="middle" fill="#6EE7B7" font-family="-apple-system, sans-serif" font-size="12.5" font-weight="700">4. Gate &amp; SSE</text>
+  <text x="1074" y="273" text-anchor="middle" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">Abstention Check</text>
+  <text x="1074" y="288" text-anchor="middle" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">[n] Offset Citations</text>
+
+  <!-- Physical Storage Row 2 -->
+  <rect x="412" y="318" width="238" height="74" rx="8" fill="#0B1120" stroke="#475569"/>
+  <text x="428" y="341" fill="#F1F5F9" font-family="ui-monospace, monospace" font-size="12" font-weight="700">tenants/aurora-cloud/index.db</text>
+  <text x="428" y="360" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">WAL · RO Pool (4 conns) · VectorCache</text>
+  <text x="428" y="378" fill="#6EE7B7" font-family="ui-monospace, monospace" font-size="10.5">Online Hot Backup + integrity_check</text>
+
+  <rect x="668" y="318" width="238" height="74" rx="8" fill="#0B1120" stroke="#475569"/>
+  <text x="684" y="341" fill="#F1F5F9" font-family="ui-monospace, monospace" font-size="12" font-weight="700">tenants/cedar-medtech/index.db</text>
+  <text x="684" y="360" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">WAL · Independent BM25 · Model Pin</text>
+  <text x="684" y="378" fill="#6EE7B7" font-family="ui-monospace, monospace" font-size="10.5">Zero Cross-Tenant Lock / Rank Leak</text>
+
+  <rect x="924" y="318" width="224" height="74" rx="8" fill="#0B1120" stroke="#475569"/>
+  <text x="940" y="341" fill="#F1F5F9" font-family="ui-monospace, monospace" font-size="12" font-weight="700">Ingest &amp; Benchmark</text>
+  <text x="940" y="360" fill="#94A3B8" font-family="ui-monospace, monospace" font-size="10.5">PDF / DOCX / HTML / CSV / MD</text>
+  <text x="940" y="378" fill="#93C5FD" font-family="ui-monospace, monospace" font-size="10.5">Online Recall@k &amp; MRR@k Eval</text>
+</svg>

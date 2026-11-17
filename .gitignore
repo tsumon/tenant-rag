@@ -9,3 +9,8 @@ build/
 dist/
 *.egg-info/
 release-artifacts/
+enterprise_data/
+web/node_modules/
+web/dist/
+*.tsbuildinfo
+.env

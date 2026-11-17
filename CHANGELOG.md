@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0 (2026-11-18)
+
+- **Enterprise Dual-Mode Architecture**: Run `pip install -e ".[enterprise]"` and `tenant-rag-enterprise` to launch a FastAPI production server with physical per-tenant SQLite WAL isolation (`TenantPool`), read-only concurrency pools, and `VectorCache`, while keeping the core `tenantrag` SDK 100% zero-dependency and backward compatible.
+- **Control Plane IAM & Tamper-Evident Audit**: Provision, suspend, or physically shred tenants; issue scoped API keys (`read`, `write`, `chat`, `eval`, `tenant_admin`) with TTLs, zero-downtime rotation, and revocation; verify audit integrity via SHA-256 hash-chaining (`/api/v1/admin/audit/verify`).
+- **Pre-Retrieval ACL, Metadata DSL, Reranking & Grounded SSE Chat**: Enforce `_acl` visibility/roles and structured metadata filters (`$eq`, `$gte`, `$in`, `$contains`, etc.) before candidate selection; refine ranks with `LexicalCrossReranker` or `/rerank` HTTP endpoints; expand sibling chunk context (`context_window`); abstain on unsupported queries (`min_vector_score`); stream grounded `[n]` character-offset citations via `/api/v1/chat/stream`.
+- **Multi-Format Ingestion, Hot Backups & Observability**: Parse `.md`, `.txt`, `.html`, `.csv`/`.tsv`, `.json`/`.jsonl`, `.docx`, and `.pdf` uploads synchronously or via `AsyncJobManager`; create and restore integrity-checked SQLite hot backups; monitor live latency and counters at `/api/v1/ready` and Prometheus `/metrics`.
+- **React 19 Dual-Perspective Workbench & Docker**: Manage tenants, keys, backups, audit logs, chunk offset highlighting, retrieval waterfall debugging, citation chat, online benchmarks, and dual-tenant isolation checks from the bundled UI or `docker compose up -d --build`.
+
 ## 0.5.1 (2026-11-05)
 
 - Add a bilingual, reproducible local real-model trial with synthetic data,

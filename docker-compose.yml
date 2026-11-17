@@ -1,0 +1,29 @@
+services:
+  tenant-rag-enterprise:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tenant-rag-enterprise
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8080"
+      TENANT_RAG_DATA_DIR: "/data/tenantrag"
+      TENANT_RAG_ADMIN_TOKEN: "${TENANT_RAG_ADMIN_TOKEN:-change-me-admin-token}"
+      EMBED_BASE_URL: "${EMBED_BASE_URL:-}"
+      EMBED_API_KEY: "${EMBED_API_KEY:-}"
+      EMBED_MODEL: "${EMBED_MODEL:-text-embedding-3-small}"
+      EMBED_REVISION: "${EMBED_REVISION:-unspecified}"
+      LLM_BASE_URL: "${LLM_BASE_URL:-}"
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_MODEL: "${LLM_MODEL:-gpt-4o-mini}"
+      RERANK_BASE_URL: "${RERANK_BASE_URL:-}"
+      RERANK_API_KEY: "${RERANK_API_KEY:-}"
+      RERANK_MODEL: "${RERANK_MODEL:-bge-reranker-v2-m3}"
+    volumes:
+      - tenant_rag_data:/data/tenantrag
+    restart: unless-stopped
+
+volumes:
+  tenant_rag_data:
