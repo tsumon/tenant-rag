@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/tsumon/tenant-rag/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/tsumon/tenant-rag/ci.yml?branch=main&label=CI" alt="CI"></a>
-  <img src="https://img.shields.io/badge/version-0.6.0-2563EB" alt="Version 0.6.0">
+  <a href="https://github.com/tsumon/tenant-rag/releases/tag/v0.6.0"><img src="https://img.shields.io/badge/version-0.6.0-2563EB" alt="Version 0.6.0"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/core_runtime_deps-0-10B981" alt="Core Runtime Deps: 0">
   <img src="https://img.shields.io/badge/isolation-logical_%26_physical_WAL-0EA5E9" alt="Isolation: Logical & Physical WAL">
@@ -18,6 +18,7 @@
 
 <p align="center">
   <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="https://github.com/tsumon/tenant-rag/releases/tag/v0.6.0">Releases (v0.6.0)</a> ·
   <a href="#30-second-enterprise-quickstart">Enterprise Quickstart</a> ·
   <a href="#workbench-tour">Workbench Tour</a> ·
   <a href="#architecture--two-stage-pipeline">Architecture</a> ·
