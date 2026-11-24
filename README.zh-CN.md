@@ -30,6 +30,27 @@
 
 ---
 
+## 离线演示：同一个问题，两个租户
+
+两个租户都问「腾讯视频多少钱」。在这组合成数据中，即使来源文档 ID 都是 `bill-txvideo`，每个租户看到的也是自己的账单：
+
+| 租户 | 答案 | 来源 |
+|---|---|---|
+| 小李 | 腾讯视频 VIP 年费 198 元 | `bill-txvideo` |
+| 小王 | 腾讯视频连续包月每月 30 元 | `bill-txvideo` |
+
+需要 Python 3.10+，且 SQLite 支持 FTS5 trigram。不用安装依赖、申请 API Key 或启动服务。
+
+```bash
+git clone --depth 1 --branch v0.6.0 https://github.com/tsumon/tenant-rag.git
+cd tenant-rag
+python3 demo/run_demo.py
+```
+
+[Python 3.12 CI 完整演示记录](https://github.com/tsumon/tenant-rag/actions/runs/44147267478/job/134265710296#step:7:1)。这是嵌入式内核的逻辑租户隔离演示；[企业版快速上手](#30-秒启动企业工作台)则使用独立的 SQLite 数据库。
+
+---
+
 ## 双模架构定位：轻量内核 + 企业级生产层
 
 `tenant-rag` 在演进到 **v0.6.0** 时严格保持**双模边界**：嵌入式应用依然可以零第三方依赖直接集成核心库，同时为真实企业生产提供物理隔离、多租户 IAM、权限预过滤、重排拒答与可视化工作台：
