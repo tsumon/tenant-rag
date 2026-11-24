@@ -30,6 +30,27 @@
 
 ---
 
+## Offline Demo: One Question, Two Tenants
+
+Ask both tenants “How much is Tencent Video?” In this synthetic dataset, the same source ID, `bill-txvideo`, resolves to a different bill in each tenant:
+
+| Tenant | Answer | Source |
+|---|---|---|
+| 小李 | CNY 198/year for Tencent Video VIP | `bill-txvideo` |
+| 小王 | CNY 30/month for Tencent Video monthly auto-renewal | `bill-txvideo` |
+
+Run the demo on Python 3.10+ with SQLite FTS5 trigram support. No package installation, API key, or server is needed.
+
+```bash
+git clone --depth 1 --branch v0.6.0 https://github.com/tsumon/tenant-rag.git
+cd tenant-rag
+python3 demo/run_demo.py
+```
+
+[Full Python 3.12 CI transcript](https://github.com/tsumon/tenant-rag/actions/runs/44147267478/job/134265710296#step:7:1). This example shows the embedded core's logical tenant isolation; the [Enterprise Quickstart](#30-second-enterprise-quickstart) uses separate SQLite databases.
+
+---
+
 ## Dual-Mode Positioning: Embedded Core + Enterprise Production
 
 `tenant-rag` preserves a strict **dual-mode boundary** so small embedded apps pay zero dependency overhead while production teams get full multi-tenant governance out of the box:
