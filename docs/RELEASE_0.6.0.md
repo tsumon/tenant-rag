@@ -18,17 +18,27 @@ Enterprise Dual-Mode release: preserves the 100% dependency-free `tenantrag` cor
 
 ### Install and verify
 
-Download `tenant_rag-0.6.0-py3-none-any.whl` and `SHA256SUMS` from this release, verify the checksums, and install either mode:
+For full verification, download all six attached assets from the [v0.6.0 release](https://github.com/tsumon/tenant-rag/releases/tag/v0.6.0) into a new, empty directory: the wheel, source distribution, `offline-eval.json`, `evidence-verification.txt`, `SOURCE_COMMIT.txt`, and `SHA256SUMS`. Do not include GitHub’s automatically generated **Source code** ZIP or tar.gz; the verifier rejects additional files.
+
+Check out the source at the release tag. Set `asset_dir` to the absolute path of the directory with the six files:
 
 ```bash
-# Verify downloaded release assets against exact commit SHA
-python scripts/verify_release_download.py DOWNLOAD_DIR FULL_COMMIT_SHA 0.6.0
+git clone --depth 1 --branch v0.6.0 https://github.com/tsumon/tenant-rag.git tenant-rag-v0.6.0
+cd tenant-rag-v0.6.0
+asset_dir="/absolute/path/to/downloaded-assets"
+release_commit=93bbe2bab5e9e643932b20cb767be64107609f47
+test "$(git rev-parse HEAD)" = "$release_commit" && \
+  python3 scripts/verify_release_download.py "$asset_dir" "$release_commit" 0.6.0
+```
 
+Once verification succeeds, install one of the following modes:
+
+```bash
 # 1. Embedded zero-dependency core only
-python -m pip install tenant_rag-0.6.0-py3-none-any.whl
+python3 -m pip install "$asset_dir/tenant_rag-0.6.0-py3-none-any.whl"
 
 # 2. Full enterprise production server + bundled React 19 UI
-python -m pip install "tenant_rag-0.6.0-py3-none-any.whl[enterprise]"
+python3 -m pip install "$asset_dir/tenant_rag-0.6.0-py3-none-any.whl[enterprise]"
 tenant-rag-enterprise --data-dir ./enterprise_data --port 8080 --demo-mode --seed-demo
 ```
 
